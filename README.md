@@ -25,3 +25,7 @@ This is a basic example which shows you how to solve a common problem:
 library(seaPiper)
 ## basic example code
 ```
+
+## Gene browser
+
+![Gene browser](man/figures/gene_browser.gif)

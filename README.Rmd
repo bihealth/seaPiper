@@ -38,3 +38,7 @@ library(seaPiper)
 ## basic example code
 ```
 
+
+## Gene browser
+
+![Gene browser](man/figures/gene_browser.gif)
