@@ -1,16 +1,28 @@
 Package: seaPiper
-Title: What the Package Does (One Line, Title Case)
+Title: Workflow output explorer for the sea-snap pipeline
 Version: 0.0.0.9000
 Authors@R: 
-    person(given = "First",
-           family = "Last",
+    person(given = "January",
+           family = "Weiner",
            role = c("aut", "cre"),
-           email = "first.last@example.com",
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+           email = "january.weiner@bih-charite.de",
+           comment = c(ORCID = "0000-0003-1438-7819"))
+Description: Launch a shiny app for viewing / exploring the results of a differential
+             expression analysis performed in sea-snap.
+License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1
+Imports: 
+  Rseasnap,
+  shiny,
+  methods,
+  shinydashboard,
+  purrr,
+  shinyjs,
+  DT,
+  shinyBS,
+  ggplot2,
+  thematic
+
