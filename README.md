@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# seaPiper
+# seaPiper <img src='man/figures/logo.png' align="right" height="314" />
 
 Workflow output explorer for the sea-snap pipeline
 
