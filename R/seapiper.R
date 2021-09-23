@@ -249,6 +249,7 @@ helpUI <- function() {
 #'        which corresponds to the primary gene identifier (including the
 #'        row names of the contrasts results in the cntr object)
 #' @param title Name of the pipeline to display
+#' @importFrom purrr %>%
 #' @importFrom shiny renderImage tags img icon imageOutput includeMarkdown
 #' @importFrom shiny addResourcePath
 #' @importFrom shinydashboard dashboardPage dashboardBody dashboardSidebar dashboardHeader
@@ -262,6 +263,7 @@ helpUI <- function() {
 #' @importFrom shiny column fluidRow h4 p tagList
 #' @importFrom shinyjs useShinyjs hidden
 #' @importFrom purrr imap map map_chr transpose
+#' @importFrom tibble rownames_to_column
 #' @importFrom DT datatable
 #' @importFrom thematic thematic_shiny
 #' @importFrom ggplot2 theme_bw theme_set

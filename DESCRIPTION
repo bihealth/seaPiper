@@ -24,5 +24,6 @@ Imports:
   DT,
   shinyBS,
   ggplot2,
-  thematic
+  thematic,
+  tibble
 
