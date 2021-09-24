@@ -25,5 +25,6 @@ Imports:
   shinyBS,
   ggplot2,
   thematic,
-  tibble
+  tibble,
+  bioshmods
 

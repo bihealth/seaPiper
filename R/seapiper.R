@@ -1,5 +1,3 @@
-options(spinner.color="#47336F")
-options(spinner.type=6)
 
 
 ## UI for the information about the pipeline
@@ -29,7 +27,7 @@ infoUI <- function(datasets) {
         solidHeader=TRUE, status="primary", collapsible=TRUE,
         column(width=11,
         fluidRow(
-             dataTableOutput("covariates")
+             DTOutput("covariates")
     )))
   )
 
@@ -144,6 +142,7 @@ helpUI <- function() {
          infoUI(pipelines))
          
     t7 <- tabItem("help", helpUI())
+
   dashboardBody(
     tabItems(
              t1, t10, t2, t3, t4, t5, t6, t7
@@ -257,7 +256,8 @@ helpUI <- function() {
 #' @importFrom methods is
 #' @importFrom stats prcomp
 #' @importFrom shiny isTruthy shinyApp
-#' @importFrom shiny dataTableOutput tableOutput renderDataTable renderTable
+#' @importFrom shiny tableOutput renderTable
+#' @importFrom DT DTOutput renderDT 
 #' @importFrom shiny selectInput 
 #' @importFrom shiny observeEvent reactiveValues
 #' @importFrom shiny column fluidRow h4 p tagList
@@ -268,7 +268,13 @@ helpUI <- function() {
 #' @importFrom thematic thematic_shiny
 #' @importFrom ggplot2 theme_bw theme_set
 #' @importFrom shinyBS tipify
-#' @import Rseasnap
+#' @importFrom bioshmods geneBrowserTableServer tmodBrowserPlotServer discoServer 
+#' @importFrom bioshmods tmodBrowserTableServer tmodPanelPlotServer pcaServer volcanoServer geneBrowserPlotServer
+#' @importFrom bioshmods geneBrowserTableUI geneBrowserPlotUI volcanoUI tmodBrowserTableUI
+#' @importFrom bioshmods tmodBrowserPlotUI discoUI tmodPanelPlotUI pcaUI
+#' @importFrom Rseasnap load_de_pipeline 
+#' @importFrom Rseasnap get_tmod_res get_tmod_dbs get_tmod_mapping get_config
+#' @importFrom Rseasnap get_covariates get_object get_annot get_contrasts 
 #' @examples
 #' if(interactive()) {
 #'   example_dir <- system.file("extdata/example_pipeline", package="Rseasnap")
@@ -280,6 +286,9 @@ helpUI <- function() {
 seapiper <- function(pip, title="Workflow output explorer", 
                              annot=NULL, cntr=NULL, tmod_res=NULL, tmod_dbs=NULL,
                              primary_id="PrimaryID") {
+
+  options(spinner.color="#47336F")
+  options(spinner.type=6)
 
   addResourcePath("icons", system.file("icons", package="Rseasnap"))
   addResourcePath("css",   system.file("css", package="Rseasnap"))
@@ -327,7 +336,7 @@ seapiper <- function(pip, title="Workflow output explorer",
     })
     output$contrasts_overview <- renderTable({ 
       contrasts_overview_table(data[["config"]][[ds]]) })
-    output$covariates         <- renderDataTable({ covariate_table(data[["covar"]][[ds]]) 
+    output$covariates         <- renderDT({ covariate_table(data[["covar"]][[ds]]) 
       })
       })
 
