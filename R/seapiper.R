@@ -257,7 +257,6 @@ helpUI <- function() {
 #' @importFrom stats prcomp
 #' @importFrom shiny isTruthy shinyApp
 #' @importFrom shiny tableOutput renderTable
-#' @importFrom DT DTOutput renderDT 
 #' @importFrom shiny selectInput 
 #' @importFrom shiny observeEvent reactiveValues
 #' @importFrom shiny column fluidRow h4 p tagList
@@ -265,6 +264,7 @@ helpUI <- function() {
 #' @importFrom purrr imap map map_chr transpose
 #' @importFrom tibble rownames_to_column
 #' @importFrom DT datatable
+#' @importFrom DT DTOutput renderDT 
 #' @importFrom thematic thematic_shiny
 #' @importFrom ggplot2 theme_bw theme_set
 #' @importFrom shinyBS tipify
@@ -336,9 +336,10 @@ seapiper <- function(pip, title="Workflow output explorer",
     })
     output$contrasts_overview <- renderTable({ 
       contrasts_overview_table(data[["config"]][[ds]]) })
-    output$covariates         <- renderDT({ covariate_table(data[["covar"]][[ds]]) 
+    output$covariates         <- renderDT({ 
+      covariate_table(data[["covar"]][[ds]]) 
       })
-      })
+    })
 
     ## this reactive value holds the id of the selected gene, however the
     ## selection has been done
