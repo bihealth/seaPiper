@@ -28,7 +28,14 @@ infoUI <- function(datasets) {
         column(width=11,
         fluidRow(
              DTOutput("covariates")
+    ))),
+    box(title="Session info:", width=12,
+        solidHeader=TRUE, status="primary", collapsible=TRUE,
+        column(width=11,
+        fluidRow(
+             verbatimTextOutput("session_info")
     )))
+        
   )
 
 }
@@ -204,6 +211,8 @@ helpUI <- function() {
     ret[["tmod_dbs"]] <- tmod_dbs[[.id]]
   }
 
+  ## we only want the tmod object
+  ret[["tmod_dbs"]] <- map(ret[["tmod_dbs"]], ~ .x$dbobj)
 
   ret[["tmod_map"]] <- get_tmod_mapping(.pip)
   ret[["tmod_gl"]]  <- get_object(.pip, step="tmod", extension="gl.rds", as_list=TRUE)
@@ -256,7 +265,7 @@ helpUI <- function() {
 #' @importFrom methods is
 #' @importFrom stats prcomp
 #' @importFrom shiny isTruthy shinyApp
-#' @importFrom shiny tableOutput renderTable
+#' @importFrom shiny tableOutput renderTable renderPrint verbatimTextOutput
 #' @importFrom shiny selectInput 
 #' @importFrom shiny observeEvent reactiveValues
 #' @importFrom shiny column fluidRow h4 p tagList
@@ -272,6 +281,7 @@ helpUI <- function() {
 #' @importFrom bioshmods tmodBrowserTableServer tmodPanelPlotServer pcaServer volcanoServer geneBrowserPlotServer
 #' @importFrom bioshmods geneBrowserTableUI geneBrowserPlotUI volcanoUI tmodBrowserTableUI
 #' @importFrom bioshmods tmodBrowserPlotUI discoUI tmodPanelPlotUI pcaUI
+#' @importFrom utils sessionInfo
 #' @importFrom Rseasnap load_de_pipeline 
 #' @importFrom Rseasnap get_tmod_res get_tmod_dbs get_tmod_mapping get_config
 #' @importFrom Rseasnap get_covariates get_object get_annot get_contrasts 
@@ -339,11 +349,16 @@ seapiper <- function(pip, title="Workflow output explorer",
     output$covariates         <- renderDT({ 
       covariate_table(data[["covar"]][[ds]]) 
       })
+    output$session_info <- renderPrint(
+                                       sessionInfo()
+                                       )
     })
 
     ## this reactive value holds the id of the selected gene, however the
     ## selection has been done
     gene_id <- reactiveValues()
+
+    ## this is reactive value for gene sets
     gs_id   <- reactiveValues()
 
     geneBrowserTableServer("geneT", data[["cntr"]], data[["annot"]], 

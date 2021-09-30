@@ -1,6 +1,6 @@
 Package: seaPiper
 Title: Workflow output explorer for the sea-snap pipeline
-Version: 0.0.0.9000
+Version: 0.0.0.9002
 Authors@R: 
     person(given = "January",
            family = "Weiner",
@@ -26,5 +26,4 @@ Imports:
   ggplot2,
   thematic,
   tibble,
-  bioshmods
-
+  bioshmods (>= 0.0.0.9001)
