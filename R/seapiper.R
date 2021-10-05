@@ -372,9 +372,9 @@ seapiper <- function(pip, title="Workflow output explorer",
                                       tmod_gl =data[["tmod_gl"]], 
                                       annot   =data[["annot"]],
                                       gene_id=gene_id)
-
+ 
     discoServer("disco", data[["cntr"]], data[["annot"]], gene_id=gene_id)
-
+ 
     tmodBrowserTableServer("tmodT", data[["tmod_res"]], gs_id=gs_id, 
                            multilevel=TRUE, tmod_dbs=data[["tmod_dbs"]])
     tmodPanelPlotServer("panelP", cntr    =data[["cntr"]], 
