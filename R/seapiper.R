@@ -371,6 +371,7 @@ seapiper <- function(pip, title="Workflow output explorer",
                                       tmod_map=data[["tmod_map"]], 
                                       tmod_gl =data[["tmod_gl"]], 
                                       annot   =data[["annot"]],
+                                      tmod_res=data[["tmod_res"]],
                                       gene_id=gene_id)
  
     discoServer("disco", data[["cntr"]], data[["annot"]], gene_id=gene_id)
