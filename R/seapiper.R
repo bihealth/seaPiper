@@ -208,7 +208,10 @@ helpUI <- function() {
     ret[["cntr"]] <- cntr[[.id]]
   }
 
-  ret[["cntr"]] <- map(ret[["cntr"]], ~ .x %>% rownames_to_column(primary_id) %>% select(all_of(contrast_cols)))
+  ret[["cntr"]] <- map(ret[["cntr"]], ~ {
+                    ret <- .x %>% rownames_to_column(primary_id) 
+                    ret[ , colnames(ret) %in% contrast_cols ]
+                                          })
 
   if(is.null(tmod_res[[.id]])) {
     message(sprintf(" * Loading tmod results for %s (consider using the tmod_res option to speed this up)", .id))
@@ -235,10 +238,10 @@ helpUI <- function() {
   ret[["tmod_map"]] <- get_tmod_mapping(.pip)
   ret[["tmod_gl"]]  <- get_object(.pip, step="tmod", extension="gl.rds", as_list=TRUE)
 
+  ## we only need the order of the genes from one tmod db
   ret[["tmod_gl"]] <- map(ret[["tmod_gl"]], ~  # one for each of contrast
-                          map(., ~  # one for each of tmod dbs
-                             map(., ~  # one for each sorting type
-                                 match(names(.), ret[["annot"]][[primary_id]]))))
+                             map(.[[1]], ~  # one for each sorting type
+                                 match(names(.), ret[["annot"]][[primary_id]])))
 
   ret[["config"]]   <- get_config(.pip)
   ret[["covar"]]    <- get_covariates(.pip)
@@ -293,7 +296,7 @@ helpUI <- function() {
 #' @importFrom shiny tableOutput renderTable renderPrint verbatimTextOutput
 #' @importFrom shiny selectInput 
 #' @importFrom shiny observeEvent reactiveValues
-#' @importFrom shiny column fluidRow h4 p tagList
+#' @importFrom shiny column fluidPage fluidRow h1 h2 h3 h4 p tagList
 #' @importFrom shinyjs useShinyjs hidden
 #' @importFrom purrr imap map map_chr transpose
 #' @importFrom tibble rownames_to_column
@@ -306,7 +309,7 @@ helpUI <- function() {
 #' @importFrom bioshmods tmodBrowserTableServer tmodPanelPlotServer pcaServer volcanoServer geneBrowserPlotServer
 #' @importFrom bioshmods geneBrowserTableUI geneBrowserPlotUI volcanoUI tmodBrowserTableUI
 #' @importFrom bioshmods tmodBrowserPlotUI discoUI tmodPanelPlotUI pcaUI
-#' @importFrom utils sessionInfo
+#' @importFrom utils sessionInfo object.size
 #' @importFrom Rseasnap load_de_pipeline 
 #' @importFrom Rseasnap get_tmod_res get_tmod_dbs get_tmod_mapping get_config
 #' @importFrom Rseasnap get_covariates get_object get_annot get_contrasts 

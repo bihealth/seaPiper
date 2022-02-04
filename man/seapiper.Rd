@@ -11,7 +11,9 @@ seapiper(
   cntr = NULL,
   tmod_res = NULL,
   tmod_dbs = NULL,
-  primary_id = "PrimaryID"
+  primary_id = "PrimaryID",
+  only_data = FALSE,
+  debug_panel = FALSE
 )
 }
 \arguments{
@@ -30,6 +32,10 @@ seapiper(
 \item{primary_id}{name of the column in the annotion data frame
 which corresponds to the primary gene identifier (including the
 row names of the contrasts results in the cntr object)}
+
+\item{only_data}{return the processed data and exit}
+
+\item{debug_panel}{show a debugging panel}
 }
 \description{
 seaPiper Workflow output explorer for the sea-snap pipeline
