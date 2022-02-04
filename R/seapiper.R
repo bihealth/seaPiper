@@ -67,16 +67,8 @@ helpUI <- function() {
 }
 
 
-.pipeline_dashboard_sidebar <- function() {
-  dashboardSidebar(
-       tags$head(
-                 tags$link(rel = "stylesheet", type = "text/css", href = "css/seapiper.css"),
-                 tags$link(rel="icon", type="image/png", sizes="32x32", href="icons/favicon-32x32.png"),
-                 tags$link(rel="icon", type="image/png", sizes="16x16", href="icons/favicon-16x16.png"),
-                 tags$link(rel="shortcut icon", type="image/x-icon", sizes="16x16", href="icons/favicon.ico")),
-       sidebarMenu(
-         # Setting id makes input$tabs give the tabName of currently-selected tab
-         id = "navid",
+.pipeline_dashboard_sidebar <- function(debug_panel=FALSE) {
+  menus <- list(
          tipify(menuItem("Gene browser",  tabName = "gene_browser", icon = icon("dna")),
                 "Browse genes and view gene expression", placement="right"),
          tipify(menuItem("Volcano plots",  tabName = "volcano_plots", icon = icon("mountain",
@@ -93,14 +85,28 @@ helpUI <- function() {
          tipify(menuItem("Workflow Info", tabName = "pip_info", icon = icon("info-circle")),
                 "View workflow parameters", placement="right"),
          menuItem("Help",          tabName = "help", icon = icon("question-circle"))
-       )
+         )
+
+  if(debug_panel) {
+    menus <- c(menus, list(menuItem("|DeBuG|", tabName = "os", icon = icon("bug"))))
+  }
+
+
+  dashboardSidebar(
+       tags$head(
+                 tags$link(rel = "stylesheet", type = "text/css", href = "css/seapiper.css"),
+                 tags$link(rel="icon", type="image/png", sizes="32x32", href="icons/favicon-32x32.png"),
+                 tags$link(rel="icon", type="image/png", sizes="16x16", href="icons/favicon-16x16.png"),
+                 tags$link(rel="shortcut icon", type="image/x-icon", sizes="16x16", href="icons/favicon.ico")),
+         # Setting id makes input$tabs give the tabName of currently-selected tab
+       do.call(sidebarMenu, c(list(id="navid"), menus))
   )
 
 }
 
 
 ## prepare the actual tabs UI
-.pipeline_dashboard_body <- function(data, title) {
+.pipeline_dashboard_body <- function(data, title, debug_panel=FALSE) {
 
   npip <- length(data[[1]])
 
@@ -149,11 +155,17 @@ helpUI <- function() {
          infoUI(pipelines))
          
     t7 <- tabItem("help", helpUI())
+    t8 <- tabItem("os", fluidPage(h1("test"), tableOutput("debugTab")))
+
+
+    if(debug_panel) {
+      tbit <- tabItems( t1, t10, t2, t3, t4, t5, t6, t7, t8)
+    } else {
+      tbit <- tabItems( t1, t10, t2, t3, t4, t5, t6, t7)
+    }
 
   dashboardBody(
-    tabItems(
-             t1, t10, t2, t3, t4, t5, t6, t7
-    ),
+    tbit,
     style="min-height:1500px;"
   )
 }
@@ -178,7 +190,8 @@ helpUI <- function() {
 }
 
 ## prepares the data structure for a single pipeline
-.prepare_data_single_pipeline <- function(.id, .pip, annot, cntr, tmod_res, tmod_dbs, primary_id) {
+.prepare_data_single_pipeline <- function(.id, .pip, annot, cntr, tmod_res, tmod_dbs, primary_id,
+                                          contrast_cols=c(primary_id, "log2FoldChange", "pvalue", "padj")) {
   ret <- list()
 
   if(is.null(annot[[.id]])) {
@@ -195,7 +208,7 @@ helpUI <- function() {
     ret[["cntr"]] <- cntr[[.id]]
   }
 
-  ret[["cntr"]] <- map(ret[["cntr"]], ~ .x %>% rownames_to_column(primary_id))
+  ret[["cntr"]] <- map(ret[["cntr"]], ~ .x %>% rownames_to_column(primary_id) %>% select(all_of(contrast_cols)))
 
   if(is.null(tmod_res[[.id]])) {
     message(sprintf(" * Loading tmod results for %s (consider using the tmod_res option to speed this up)", .id))
@@ -211,11 +224,21 @@ helpUI <- function() {
     ret[["tmod_dbs"]] <- tmod_dbs[[.id]]
   }
 
+  ## get rid of unnecessary data
+  for(i in 1:length(ret[["tmod_dbs"]])) {
+    ret[["tmod_dbs"]][[i]][["dbobj"]][["GENES2MODULES"]] <- NULL
+  }
+
   ## we only want the tmod object
   ret[["tmod_dbs"]] <- map(ret[["tmod_dbs"]], ~ .x$dbobj)
 
   ret[["tmod_map"]] <- get_tmod_mapping(.pip)
   ret[["tmod_gl"]]  <- get_object(.pip, step="tmod", extension="gl.rds", as_list=TRUE)
+
+  ret[["tmod_gl"]] <- map(ret[["tmod_gl"]], ~  # one for each of contrast
+                          map(., ~  # one for each of tmod dbs
+                             map(., ~  # one for each sorting type
+                                 match(names(.), ret[["annot"]][[primary_id]]))))
 
   ret[["config"]]   <- get_config(.pip)
   ret[["covar"]]    <- get_covariates(.pip)
@@ -257,6 +280,8 @@ helpUI <- function() {
 #'        which corresponds to the primary gene identifier (including the
 #'        row names of the contrasts results in the cntr object)
 #' @param title Name of the pipeline to display
+#' @param only_data return the processed data and exit
+#' @param debug_panel show a debugging panel
 #' @importFrom purrr %>%
 #' @importFrom shiny renderImage tags img icon imageOutput includeMarkdown
 #' @importFrom shiny addResourcePath
@@ -295,15 +320,9 @@ helpUI <- function() {
 #' @export
 seapiper <- function(pip, title="Workflow output explorer", 
                              annot=NULL, cntr=NULL, tmod_res=NULL, tmod_dbs=NULL,
-                             primary_id="PrimaryID") {
-
-  options(spinner.color="#47336F")
-  options(spinner.type=6)
-
-  addResourcePath("icons", system.file("icons", package="Rseasnap"))
-  addResourcePath("css",   system.file("css", package="Rseasnap"))
-
-  theme_set(theme_bw())
+                             primary_id="PrimaryID",
+                             only_data=FALSE, debug_panel=FALSE) {
+  env <- environment()  # can use globalenv(), parent.frame(), etc
 
   ## pip can be a pipeline or a list of pipelines. In this first case, we
   ## change everything into a list.
@@ -317,13 +336,21 @@ seapiper <- function(pip, title="Workflow output explorer",
   }
 
   data <- .prepare_data(pip, annot, cntr, tmod_res, tmod_dbs, primary_id)
+  if(only_data) { return(data) }
 
+  options(spinner.color="#47336F")
+  options(spinner.type=6)
+
+  addResourcePath("icons", system.file("icons", package="Rseasnap"))
+  addResourcePath("css",   system.file("css", package="Rseasnap"))
+
+  theme_set(theme_bw())
   thematic_shiny(font="auto")
 
   ## Prepare the UI
   header  <- .pipeline_dashboard_header(title)     
-  sidebar <- .pipeline_dashboard_sidebar()
-  body    <- .pipeline_dashboard_body(data, title)
+  sidebar <- .pipeline_dashboard_sidebar(debug_panel=debug_panel)
+  body    <- .pipeline_dashboard_body(data, title, debug_panel=debug_panel)
   ui <- dashboardPage(header, sidebar, body, skin="purple", title=title)
 
   #   theme = bs_theme(primary = "#47336F", secondary = "#C6B3EB", 
@@ -402,6 +429,23 @@ seapiper <- function(pip, title="Workflow output explorer",
                           annot_linkout=data[["annot_linkout"]],
                           cntr=data[["cntr"]]
     )
+
+    if(debug_panel) {
+      output$debugTab <- renderTable({
+        objects <- ls(env)
+        sizes <- unlist(lapply(objects, function(x) {
+                          object.size(get(x, envir=env, inherits=FALSE))}))
+        sizes.mb <- unlist(lapply(objects, function(x) {
+                          format(object.size(get(x, envir=env, inherits=FALSE)), units="Mb")}))
+
+        ret <- data.frame(
+                          objects=objects,
+                          sizes  =sizes,
+                          sizes.mb=sizes.mb)
+        ret <- ret[ order(-ret$sizes), ]
+        ret
+      })
+    }
   }
 
   shinyApp(ui, server)
