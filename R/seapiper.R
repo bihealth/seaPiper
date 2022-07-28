@@ -172,7 +172,7 @@ helpUI <- function() {
 
 
 ## load missing objects, prepare the data etc.
-.prepare_data <- function(pip, annot=NULL, cntr=NULL, tmod_res=NULL, tmod_dbs=NULL, primary_id) {
+.prepare_data <- function(pip, primary_id, annot=NULL, cntr=NULL, tmod_res=NULL, tmod_dbs=NULL, save_memory=FALSE) {
 
   message("preparing...")
   if(is.null(annot))    { annot <- list() }
@@ -183,15 +183,16 @@ helpUI <- function() {
   data <- imap(pip, ~ {
     .pip <- .x
     .id  <- .y
-    .prepare_data_single_pipeline(.id, .pip, annot, cntr, tmod_res, tmod_dbs, primary_id)
+    .prepare_data_single_pipeline(.id, .pip, primary_id, annot, cntr, tmod_res, tmod_dbs, save_memory=save_memory)
   })
 
   return(transpose(data))
 }
 
 ## prepares the data structure for a single pipeline
-.prepare_data_single_pipeline <- function(.id, .pip, annot, cntr, tmod_res, tmod_dbs, primary_id,
-                                          contrast_cols=c(primary_id, "log2FoldChange", "pvalue", "padj")) {
+.prepare_data_single_pipeline <- function(.id, .pip, primary_id, annot, cntr, tmod_res, tmod_dbs,
+                                          contrast_cols=c(primary_id, "log2FoldChange", "pvalue", "padj"),
+                                          save_memory=FALSE) {
   ret <- list()
 
   if(is.null(annot[[.id]])) {
@@ -199,6 +200,10 @@ helpUI <- function() {
     ret[["annot"]] <- get_annot(.pip)
   } else {
     ret[["annot"]] <- annot[[.id]]
+  }
+
+  if(save_memory) {
+    ret[["annot"]] <- as.disk.frame(ret[["annot"]])
   }
 
   if(is.null(cntr[[.id]])) {
@@ -212,6 +217,9 @@ helpUI <- function() {
                     ret <- .x %>% rownames_to_column(primary_id) 
                     ret[ , colnames(ret) %in% contrast_cols ]
                                           })
+  if(save_memory) {
+    ret[["cntr"]] <- map(ret[["cntr"]], ~ as.disk.frame(.x))
+  }
 
   if(is.null(tmod_res[[.id]])) {
     message(sprintf(" * Loading tmod results for %s (consider using the tmod_res option to speed this up)", .id))
@@ -252,7 +260,7 @@ helpUI <- function() {
   ret[["sorting"]] <- ret[["config"]]$tmod$sort_by
 
   ret[["rld"]]     <- get_object(.pip, step="DESeq2", extension="rld.blind.rds")
-  ret[["rld"]]     <- ret[["rld"]]@assays@data@listData[[1]]
+  ret[["rld"]]     <- assay(ret[["rld"]])
 
   ret[["pca"]] <- prcomp(t(ret[["rld"]]), scale.=TRUE)$x
   
@@ -284,7 +292,10 @@ helpUI <- function() {
 #'        row names of the contrasts results in the cntr object)
 #' @param title Name of the pipeline to display
 #' @param only_data return the processed data and exit
+#' @param save_memory if TRUE, then large objects (contrasts, annotations)
+#' will be used as disk.frame object. Slower, but more memory efficient.
 #' @param debug_panel show a debugging panel
+#' @importFrom disk.frame as.disk.frame
 #' @importFrom purrr %>%
 #' @importFrom shiny renderImage tags img icon imageOutput includeMarkdown
 #' @importFrom shiny addResourcePath
@@ -324,8 +335,11 @@ helpUI <- function() {
 seapiper <- function(pip, title="Workflow output explorer", 
                              annot=NULL, cntr=NULL, tmod_res=NULL, tmod_dbs=NULL,
                              primary_id="PrimaryID",
-                             only_data=FALSE, debug_panel=FALSE) {
+                             only_data=FALSE, 
+                             save_memory=FALSE,
+                             debug_panel=FALSE) {
   env <- environment()  # can use globalenv(), parent.frame(), etc
+  env <- .GlobalEnv
 
   ## pip can be a pipeline or a list of pipelines. In this first case, we
   ## change everything into a list.
@@ -338,7 +352,8 @@ seapiper <- function(pip, title="Workflow output explorer",
     if(!is.null(tmod_dbs)) { tmod_dbs <- list(default=tmod_dbs) }
   }
 
-  data <- .prepare_data(pip, annot, cntr, tmod_res, tmod_dbs, primary_id)
+  data <- .prepare_data(pip, primary_id, annot=annot, cntr=cntr, tmod_res=tmod_res, 
+                        tmod_dbs=tmod_dbs, save_memory=save_memory)
   if(only_data) { return(data) }
 
   options(spinner.color="#47336F")
