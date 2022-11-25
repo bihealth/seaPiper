@@ -57,7 +57,7 @@ helpUI <- function() {
   do.call(tagList, ret)
 }
 
-
+## add the icon and a dropdown menu to page head
 .pipeline_dashboard_header <- function(title) {
 
   dashboardHeader(title=img(src="icons/piper_horiz.png", alt="[seaPiper]"),
@@ -445,7 +445,8 @@ seapiper <- function(pip, title="Workflow output explorer",
     geneBrowserPlotServer("geneP", gene_id, covar=data[["covar"]], 
                           exprs=data[["rld"]], annot=data[["annot"]], 
                           annot_linkout=data[["annot_linkout"]],
-                          cntr=data[["cntr"]]
+                          cntr=data[["cntr"]],
+                          exprs_label = "Regularized log transformed expression (rlog)"
     )
 
     if(debug_panel) {
