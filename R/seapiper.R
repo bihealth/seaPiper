@@ -166,7 +166,7 @@ helpUI <- function() {
 
   dashboardBody(
     tbit,
-    style="min-height:1500px;"
+    style="min-height:2500px;"
   )
 }
 
@@ -262,7 +262,11 @@ helpUI <- function() {
   ret[["rld"]]     <- get_object(.pip, step="DESeq2", extension="rld.blind.rds")
   ret[["rld"]]     <- assay(ret[["rld"]])
 
-  ret[["pca"]] <- prcomp(t(ret[["rld"]]), scale.=TRUE)$x
+  ## prepare the PCA
+  mtx <- t(ret[["rld"]])
+  vars <- order(apply(mtx, 2, var), decreasing=TRUE)
+  sel  <- vars > 1e-26
+  ret[["pca"]] <- prcomp(mtx[ , sel], scale.=TRUE)$x
   
   ret[["cntr_titles"]]        <- map_chr(ret[["config"]]$contrasts$contrast_list, `[[`, "ID")
   names(ret[["cntr_titles"]]) <- map_chr(ret[["config"]]$contrasts$contrast_list, `[[`, "title")
