@@ -171,19 +171,16 @@ helpUI <- function() {
 }
 
 
-## load missing objects, prepare the data etc.
-.prepare_data <- function(pip, primary_id, annot=NULL, cntr=NULL, tmod_res=NULL, tmod_dbs=NULL, save_memory=FALSE) {
+## make sure everything is where it is needed
+.prepare_data <- function(x, primary_id, annot_default=NULL, tmod_dbs_default=NULL, tmod_map_default=NULL, save_memory=FALSE) {
 
-  message("preparing...")
-  if(is.null(annot))    { annot <- list() }
-  if(is.null(cntr))     { cntr <- list() }
-  if(is.null(tmod_res)) { tmod_res <- list() }
-  if(is.null(tmod_dbs)) { tmod_dbs <- list() }
-
-  data <- imap(pip, ~ {
-    .pip <- .x
+  data <- imap(x, ~ {
     .id  <- .y
-    .prepare_data_single_pipeline(.id, .pip, primary_id, annot, cntr, tmod_res, tmod_dbs, save_memory=save_memory)
+    #.prepare_data_single_pipeline(.id, .pip, primary_id, annot, cntr, tmod_res, tmod_dbs, save_memory=save_memory)
+    if(is.null(.x$annot)) .x$annot       <- annot_default
+    if(is.null(.x$tmod_map)) .x$tmod_map <- tmod_map_default
+    if(is.null(.x$tmod_dbs)) .x$tmod_dbs <- tmod_dbs_default
+    .x
   })
 
   return(transpose(data))
@@ -288,18 +285,19 @@ helpUI <- function() {
 #' Launching is much faster if the large objects (contrasts, tmod
 #' databases) do not need to be loaded each time the pipeline browser is
 #' started.
-#' @param pip pipeline returned by `load_de_pipeline`
-#' @param annot annotation returned by `get_annot`
-#' @param cntr contrasts list returned by `get_contrasts`
-#' @param tmod_dbs tmod databases returned by `get_tmod_dbs`
-#' @param tmod_res tmod results returned by `get_tmod_res`
+#' @param x an object of the class [`seapiper_ds`], for example created with
+#' [new_seapiper_dataset()].
+#' @param annot_default default annotation which will be used if annotation
+#' is not specified in `x`
+#' @param tmod_dbs_default default tmod database list, which will be used if the
+#' databases are not specified in the `x`
 #' @param primary_id name of the column in the annotion data frame
 #'        which corresponds to the primary gene identifier (including the
 #'        row names of the contrasts results in the cntr object)
 #' @param title Name of the pipeline to display
 #' @param only_data return the processed data and exit
-#' @param save_memory if TRUE, then large objects (contrasts, annotations)
-#' will be used as disk.frame object. Slower, but more memory efficient.
+##' @param save_memory if TRUE, then large objects (contrasts, annotations)
+##' will be used as disk.frame object. Slower, but more memory efficient.
 #' @param debug_panel show a debugging panel
 #' @importFrom disk.frame as.disk.frame
 #' @importFrom purrr %>%
@@ -315,7 +313,7 @@ helpUI <- function() {
 #' @importFrom shiny observeEvent reactiveValues
 #' @importFrom shiny column fluidPage fluidRow h1 h2 h3 h4 p tagList
 #' @importFrom shinyjs useShinyjs hidden
-#' @importFrom purrr imap map map_chr transpose
+#' @importFrom purrr imap map map_chr map_lgl transpose
 #' @importFrom tibble rownames_to_column
 #' @importFrom DT datatable
 #' @importFrom DT DTOutput renderDT 
@@ -338,28 +336,33 @@ helpUI <- function() {
 #'   pipeline_browser(pip)
 #' }
 #' @export
-seapiper <- function(pip, title="Workflow output explorer", 
-                             annot=NULL, cntr=NULL, tmod_res=NULL, tmod_dbs=NULL,
+seapiper <- function(x, title="Workflow output explorer", 
+                             annot_default=NULL, 
+                             tmod_dbs_default=NULL,
+                             tmod_map_default=NULL,
                              primary_id="PrimaryID",
                              only_data=FALSE, 
                              save_memory=FALSE,
                              debug_panel=FALSE) {
+
+  ## for debugging purposes
   env <- environment()  # can use globalenv(), parent.frame(), etc
   env <- .GlobalEnv
 
-  ## pip can be a pipeline or a list of pipelines. In this first case, we
+  ## x can be a seasnap_ds or a list of seasnap_ds. In this first case, we
   ## change everything into a list.
-  if(is(pip, "seasnap_DE_pipeline")) {
-    pip <- list(default=pip)
-
-    if(!is.null(annot))    { annot    <- list(default=annot)    }
-    if(!is.null(cntr))     { cntr     <- list(default=cntr)     }
-    if(!is.null(tmod_res)) { tmod_res <- list(default=tmod_res) }
-    if(!is.null(tmod_dbs)) { tmod_dbs <- list(default=tmod_dbs) }
+  if(is(x, "seapiper_ds")) {
+    x <- list(default=x)
   }
 
-  data <- .prepare_data(pip, primary_id, annot=annot, cntr=cntr, tmod_res=tmod_res, 
-                        tmod_dbs=tmod_dbs, save_memory=save_memory)
+  stopifnot(all(map_lgl(x, ~ is(.x, "seapiper_ds"))))
+  data <- .prepare_data(x, primary_id, annot=annot_default, 
+                                       tmod_dbs=tmod_dbs_default,
+                                       tmod_map=tmod_map_default)
+
+  #data <- .prepare_data(pip, primary_id, annot=annot, cntr=cntr, tmod_res=tmod_res, 
+  #                      tmod_dbs=tmod_dbs, save_memory=save_memory)
+
   if(only_data) { return(data) }
 
   options(spinner.color="#47336F")
@@ -416,6 +419,7 @@ seapiper <- function(pip, title="Workflow output explorer",
       annot_linkout=data[["annot_linkout"]],
       gene_id=gene_id)
 
+    if(FALSE) {
     tmodBrowserPlotServer("tmodP", gs_id, 
                                       tmod_dbs=data[["tmod_dbs"]], 
                                       cntr    =data[["cntr"]], 
@@ -436,7 +440,11 @@ seapiper <- function(pip, title="Workflow output explorer",
                                   annot   =data[["annot"]],
                                   gs_id=gs_id)
  
-    pcaServer("pca", data[["pca"]], data[["covar"]])
+    }
+    if(!is.null(data[["pca"]])) {
+      pcaServer("pca", data[["pca"]], data[["covar"]])
+    }
+
     volcanoServer("volcano", data[["cntr"]], annot=data[["annot"]], gene_id=gene_id)
     
     observeEvent(gs_id$id, { 

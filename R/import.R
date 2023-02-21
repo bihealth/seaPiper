@@ -30,15 +30,23 @@
 #' define the primary gene IDs.
 #' @param primary_id Name of the column in contrast data frames which holds
 #' the primary gene identifier.
+#' @param exprs data frame or matrix containing the normalized expression
+#' values
 #' @return An object of the class seapiper_ds
+#' @rdname seapiper_ds
 #' @export
 # XXX how should we deal with tmod gene sets results? biglist or list of
 # dataframes?
 new_seapiper_dataset <- function(
                                  cntr,
-                                 tmod_res=NULL,
-                                 annot=NULL,
-                                 primary_id = "PrimaryID"
+                                 covar,
+                                 exprs      = NULL,
+                                 cntr_titles= NULL,
+                                 tmod_res   = NULL,
+                                 annot      = NULL,
+                                 primary_id = "PrimaryID",
+                                 tmod_dbs   = NULL,
+                                 tmod_map   = NULL
 
   
   #primary_id, annot, cntr, tmod_res, tmod_dbs,
@@ -54,14 +62,26 @@ new_seapiper_dataset <- function(
     names(cntr) <- paste0("ID", seq_along(cntr))
   }
 
+  message("checking contrasts")
+  ## XXX this is unnecessarily slow because we copy the whole object even if it
+  ## is OK... I think
   cntr <- imap(cntr, ~ {
     # XXX check for .x being a DF
     .x <- .check_df_primary_id(.x, primary_id)
     .x
   })
 
-  ret$cntr <- cntr
+  ret$cntr  <- cntr
 
+  if(is.null(cntr_titles)) { cntr_titles <- names(cntr) }
+
+  ret$cntr_titles <- cntr_titles
+  ret$exprs       <- exprs
+
+  stopifnot(is.data.frame(covar))
+  ret$covar <- covar
+
+  message("checking tmod res")
   if(!is.null(tmod_res)) {
     if(is.null(names(tmod_res))) {
       names(tmod_res) <- paste0("ID", seq_along(tmod_res))
@@ -72,10 +92,12 @@ new_seapiper_dataset <- function(
     ## XXX check that the tmod_res object is correct
   }
 
+  message("checking annotation")
   if(!is.null(annot)) {
     ret$annot <- .check_df_primary_id(annot, primary_id)
   }
 
+  message("returning")
   class(ret) <- c("seapiper_ds", class(ret))
   attr(ret, "primary_id") <- primary_id
   ret
@@ -85,7 +107,7 @@ new_seapiper_dataset <- function(
 #'
 #' S3 class for seapiper data sets
 #' @return print.seapiper_ds does not return anything
-#' @rdname seapiper_ds-class
+#' @rdname seapiper_ds
 #' @export
 print.seapiper_ds <- function(x, ...) {
   .catf("Object of class seapiper_ds\n")
