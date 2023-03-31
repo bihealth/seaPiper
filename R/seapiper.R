@@ -171,109 +171,6 @@ helpUI <- function() {
 }
 
 
-## make sure everything is where it is needed
-.prepare_data <- function(x, primary_id, annot_default=NULL, tmod_dbs_default=NULL, tmod_map_default=NULL, save_memory=FALSE) {
-
-  data <- imap(x, ~ {
-    .id  <- .y
-    #.prepare_data_single_pipeline(.id, .pip, primary_id, annot, cntr, tmod_res, tmod_dbs, save_memory=save_memory)
-    if(is.null(.x$annot)) .x$annot       <- annot_default
-    if(is.null(.x$tmod_map)) .x$tmod_map <- tmod_map_default
-    if(is.null(.x$tmod_dbs)) .x$tmod_dbs <- tmod_dbs_default
-    .x
-  })
-
-  return(transpose(data))
-}
-
-## prepares the data structure for a single pipeline
-.prepare_data_single_pipeline <- function(.id, .pip, primary_id, annot, cntr, tmod_res, tmod_dbs,
-                                          contrast_cols=c(primary_id, "log2FoldChange", "pvalue", "padj"),
-                                          save_memory=FALSE) {
-  ret <- list()
-
-  if(is.null(annot[[.id]])) {
-    message(sprintf(" * Loading annotation for %s (consider using the annot option to speed this up)", .id))
-    ret[["annot"]] <- get_annot(.pip)
-  } else {
-    ret[["annot"]] <- annot[[.id]]
-  }
-
-  if(save_memory) {
-    ret[["annot"]] <- as.disk.frame(ret[["annot"]])
-  }
-
-  if(is.null(cntr[[.id]])) {
-    message(sprintf(" * Loading contrasts for %s (consider using the cntr option to speed this up)", .id))
-    ret[["cntr"]] <- get_contrasts(.pip)
-  } else {
-    ret[["cntr"]] <- cntr[[.id]]
-  }
-
-  ret[["cntr"]] <- map(ret[["cntr"]], ~ {
-                    ret <- .x %>% rownames_to_column(primary_id) 
-                    ret[ , colnames(ret) %in% contrast_cols ]
-                                          })
-  if(save_memory) {
-    ret[["cntr"]] <- map(ret[["cntr"]], ~ as.disk.frame(.x))
-  }
-
-  if(is.null(tmod_res[[.id]])) {
-    message(sprintf(" * Loading tmod results for %s (consider using the tmod_res option to speed this up)", .id))
-    ret[["tmod_res"]] <- get_tmod_res(.pip)
-  } else {
-    ret[["tmod_res"]] <- tmod_res[[.id]]
-  }
-
-  if(is.null(tmod_dbs[[.id]])) {
-    message(sprintf(" * Loading tmod databases for %s (consider using the tmod_dbs option to speed this up)", .id))
-    ret[["tmod_dbs"]] <- get_tmod_dbs(.pip)
-  } else {
-    ret[["tmod_dbs"]] <- tmod_dbs[[.id]]
-  }
-
-  ## get rid of unnecessary data
-  for(i in 1:length(ret[["tmod_dbs"]])) {
-    ret[["tmod_dbs"]][[i]][["dbobj"]][["GENES2MODULES"]] <- NULL
-  }
-
-  ## we only want the tmod object
-  ret[["tmod_dbs"]] <- map(ret[["tmod_dbs"]], ~ .x$dbobj)
-
-  ret[["tmod_map"]] <- get_tmod_mapping(.pip)
-  ret[["tmod_gl"]]  <- get_object(.pip, step="tmod", extension="gl.rds", as_list=TRUE)
-
-  ## we only need the order of the genes from one tmod db
-  ret[["tmod_gl"]] <- map(ret[["tmod_gl"]], ~  # one for each of contrast
-                             map(.[[1]], ~  # one for each sorting type
-                                 match(names(.), ret[["annot"]][[primary_id]])))
-
-  ret[["config"]]   <- get_config(.pip)
-  ret[["covar"]]    <- get_covariates(.pip)
-
-  ret[["annot_linkout"]] <- .prep_annot_linkout(ret[["annot"]], ret[["config"]])
-
-  ret[["dbs"]]     <- names(tmod_dbs)
-  ret[["sorting"]] <- ret[["config"]]$tmod$sort_by
-
-  ret[["rld"]]     <- get_object(.pip, step="DESeq2", extension="rld.blind.rds")
-  ret[["rld"]]     <- assay(ret[["rld"]])
-
-  ## prepare the PCA
-  mtx <- t(ret[["rld"]])
-  vars <- order(apply(mtx, 2, var), decreasing=TRUE)
-  sel  <- vars > 1e-26
-  ret[["pca"]] <- prcomp(mtx[ , sel], scale.=TRUE)$x
-  
-  ret[["cntr_titles"]]        <- map_chr(ret[["config"]]$contrasts$contrast_list, `[[`, "ID")
-  names(ret[["cntr_titles"]]) <- map_chr(ret[["config"]]$contrasts$contrast_list, `[[`, "title")
-  ret[["cntr_titles"]]        <- ret[["cntr_titles"]][ ret[["cntr_titles"]] %in% names(ret[["cntr"]]) ]
-
-  ret
-}
-
-
-
 
 #' seaPiper Workflow output explorer
 #'
@@ -359,7 +256,6 @@ seapiper <- function(x, title="Workflow output explorer",
   data <- .prepare_data(x, primary_id, annot=annot_default, 
                                        tmod_dbs=tmod_dbs_default,
                                        tmod_map=tmod_map_default)
-
   #data <- .prepare_data(pip, primary_id, annot=annot, cntr=cntr, tmod_res=tmod_res, 
   #                      tmod_dbs=tmod_dbs, save_memory=save_memory)
 
@@ -384,7 +280,6 @@ seapiper <- function(x, title="Workflow output explorer",
   #                           font_scale = NULL, 
   #                           `enable-shadows` = TRUE, 
   #                           bootswatch = "united"),
-
 
   server <- function(input, output, session) {
 
@@ -419,7 +314,15 @@ seapiper <- function(x, title="Workflow output explorer",
       annot_linkout=data[["annot_linkout"]],
       gene_id=gene_id)
 
-    if(FALSE) {
+    geneBrowserPlotServer("geneP", gene_id, covar=data[["covar"]], 
+                          exprs=data[["exprs"]], annot=data[["annot"]], 
+                          annot_linkout=data[["annot_linkout"]],
+                          cntr=data[["cntr"]],
+                          exprs_label = "Regularized log transformed expression (rlog)"
+    )
+
+
+    if(FALSE) {#XXX
     tmodBrowserPlotServer("tmodP", gs_id, 
                                       tmod_dbs=data[["tmod_dbs"]], 
                                       cntr    =data[["cntr"]], 
@@ -440,7 +343,6 @@ seapiper <- function(x, title="Workflow output explorer",
                                   annot   =data[["annot"]],
                                   gs_id=gs_id)
  
-    }
     if(!is.null(data[["pca"]])) {
       pcaServer("pca", data[["pca"]], data[["covar"]])
     }
@@ -456,13 +358,6 @@ seapiper <- function(x, title="Workflow output explorer",
       updateTabItems(session, "navid", "gene_browser")
     })
  
-    geneBrowserPlotServer("geneP", gene_id, covar=data[["covar"]], 
-                          exprs=data[["rld"]], annot=data[["annot"]], 
-                          annot_linkout=data[["annot_linkout"]],
-                          cntr=data[["cntr"]],
-                          exprs_label = "Regularized log transformed expression (rlog)"
-    )
-
     if(debug_panel) {
       output$debugTab <- renderTable({
         objects <- ls(env)
@@ -479,6 +374,9 @@ seapiper <- function(x, title="Workflow output explorer",
         ret
       })
     }
+
+    }#XXX
+
   }
 
   shinyApp(ui, server)
