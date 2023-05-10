@@ -20,16 +20,22 @@
 #' "PrimaryID" or whatever is given by the primary_id parameter) is missing, then row names will be
 #' saved to that column. If both the column with primary IDs and row names
 #' are missing, an error will be raised.
-#' @param tmod_res Results of the gene set enrichment analysis. If the list is unnamed, then
+#' @param tmod_res Optional: Results of the gene set enrichment analysis. If the list is unnamed, then
 #' names will be generated (ID1, ID2, ...). The sets of names of `tmod_res`
-#' and `cntr` must be equal. Each element of the list must
+#' and `cntr` must be equal (that is, there should be an element for each
+#' contrast). Each element of the list must
 #' itself be either a data frame with gene set enrichment results or a named list of data frames
 #' with gene set enrichment results
 #' @param annot Annotation data frame. If defined, the column indicated by
 #' the `primary_id` parameter must be present; alternatively, the rows
-#' define the primary gene IDs.
-#' @param primary_id Name of the column in contrast data frames which holds
-#' the primary gene identifier.
+#' define the primary gene IDs. If both `primary_id` and row names are
+#' missing, an error is raised.
+#' @param tmod_dbs Optional: A named list of gene set databases. See "Details".
+#' @param tmod_map Optional: an object defining mapping between the gene
+#' set databases and the `primary_id` column from the contrasts. See
+#' "Details".
+#' @param primary_id Name of the column in contrast data frames and in the
+#' annotation data frame which holds the primary gene identifier.
 #' @param exprs data frame or matrix containing the normalized expression
 #' values
 #' @return An object of the class seapiper_ds
