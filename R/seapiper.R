@@ -193,13 +193,13 @@ helpUI <- function() {
 #'        row names of the contrasts results in the cntr object)
 #' @param title Name of the pipeline to display
 #' @param only_data return the processed data and exit
+#' @param lfc_col,pval_col column names for log fold change and p-value
 ##' @param save_memory if TRUE, then large objects (contrasts, annotations)
 ##' will be used as disk.frame object. Slower, but more memory efficient.
 #' @param debug_panel show a debugging panel
 #' @importFrom disk.frame as.disk.frame
 #' @importFrom purrr %>%
-#' @importFrom shiny renderImage tags img icon imageOutput includeMarkdown
-#' @importFrom shiny addResourcePath
+#' @importFrom shiny renderImage tags img icon imageOutput includeMarkdown addResourcePath
 #' @importFrom shinydashboard dashboardPage dashboardBody dashboardSidebar dashboardHeader
 #' @importFrom shinydashboard box sidebarMenu tabItem tabItems updateTabItems menuItem
 #' @importFrom methods is
@@ -212,8 +212,7 @@ helpUI <- function() {
 #' @importFrom shinyjs useShinyjs hidden
 #' @importFrom purrr imap map map_chr map_lgl transpose
 #' @importFrom tibble rownames_to_column
-#' @importFrom DT datatable
-#' @importFrom DT DTOutput renderDT 
+#' @importFrom DT datatable DTOutput renderDT 
 #' @importFrom thematic thematic_shiny
 #' @importFrom ggplot2 theme_bw theme_set
 #' @importFrom shinyBS tipify
@@ -240,11 +239,12 @@ seapiper <- function(x, title="Workflow output explorer",
                              primary_id="PrimaryID",
                              only_data=FALSE, 
                              save_memory=FALSE,
+                             lfc_col="log2FoldChange", pval_col="padj",
                              debug_panel=FALSE) {
 
   ## for debugging purposes
   env <- environment()  # can use globalenv(), parent.frame(), etc
-  env <- .GlobalEnv
+  #env <- .GlobalEnv
 
   ## x can be a seasnap_ds or a list of seasnap_ds. In this first case, we
   ## change everything into a list.
@@ -252,14 +252,17 @@ seapiper <- function(x, title="Workflow output explorer",
     x <- list(default=x)
   }
 
+  ## check that all objects in x are of type seapiper_ds
   stopifnot(all(map_lgl(x, ~ is(.x, "seapiper_ds"))))
-  data <- .prepare_data(x, primary_id, annot=annot_default, 
+
+  x <- .prepare_data(x, primary_id, annot=annot_default, 
                                        tmod_dbs=tmod_dbs_default,
-                                       tmod_map=tmod_map_default)
+                                       tmod_map=tmod_map_default,
+                                       pval_col=pval_col, lfc_col=lfc_col)
   #data <- .prepare_data(pip, primary_id, annot=annot, cntr=cntr, tmod_res=tmod_res, 
   #                      tmod_dbs=tmod_dbs, save_memory=save_memory)
 
-  if(only_data) { return(data) }
+  if(only_data) { return(x) }
 
   options(spinner.color="#47336F")
   options(spinner.type=6)
@@ -273,8 +276,8 @@ seapiper <- function(x, title="Workflow output explorer",
   ## Prepare the UI
   header  <- .pipeline_dashboard_header(title)     
   sidebar <- .pipeline_dashboard_sidebar(debug_panel=debug_panel)
-  body    <- .pipeline_dashboard_body(data, title, debug_panel=debug_panel)
-  ui <- dashboardPage(header, sidebar, body, skin="purple", title=title)
+  body    <- .pipeline_dashboard_body(x, title, debug_panel=debug_panel)
+  ui      <- dashboardPage(header, sidebar, body, skin="purple", title=title)
 
   #   theme = bs_theme(primary = "#47336F", secondary = "#C6B3EB", 
   #                           font_scale = NULL, 
@@ -290,13 +293,21 @@ seapiper <- function(x, title="Workflow output explorer",
         return(NULL)
       }
                    
-    output$project_overview   <- renderTable({ 
-      project_overview_table(data[["config"]][[ds]], title) 
-    })
-    output$contrasts_overview <- renderTable({ 
-      contrasts_overview_table(data[["config"]][[ds]]) })
+
+    if(is.null(x[["config"]])) {
+      output$project_overview   <- renderText({ "No configuration defined" })
+    } else {
+      output$project_overview   <- renderTable({ project_overview_table(x[["config"]][[ds]], title) })
+    }
+
+    if(is.null(x[["config"]])) {
+      output$project_overview   <- renderText({ "No configuration defined" })
+    } else {
+      output$contrasts_overview <- renderTable({ contrasts_overview_table(x[["config"]][[ds]]) }) 
+    }
+
     output$covariates         <- renderDT({ 
-      covariate_table(data[["covar"]][[ds]]) 
+      covariate_table(x[["covar"]][[ds]]) 
       })
     output$session_info <- renderPrint(
                                        sessionInfo()
@@ -310,55 +321,28 @@ seapiper <- function(x, title="Workflow output explorer",
     ## this is reactive value for gene sets
     gs_id   <- reactiveValues()
 
-    geneBrowserTableServer("geneT", data[["cntr"]], data[["annot"]], 
-      annot_linkout=data[["annot_linkout"]],
+    geneBrowserTableServer("geneT", x[["cntr"]], x[["annot"]], 
+      annot_linkout=x[["annot_linkout"]],
       gene_id=gene_id)
 
-    geneBrowserPlotServer("geneP", gene_id, covar=data[["covar"]], 
-                          exprs=data[["exprs"]], annot=data[["annot"]], 
-                          annot_linkout=data[["annot_linkout"]],
-                          cntr=data[["cntr"]],
+    geneBrowserPlotServer("geneP", gene_id, covar=x[["covar"]], 
+                          exprs=x[["exprs"]], annot=x[["annot"]], 
+                          annot_linkout=x[["annot_linkout"]],
+                          cntr=x[["cntr"]],
                           exprs_label = "Regularized log transformed expression (rlog)"
     )
 
+    volcanoServer("volcano", x[["cntr"]], annot=x[["annot"]], gene_id=gene_id)
 
-    if(FALSE) {#XXX
-    tmodBrowserPlotServer("tmodP", gs_id, 
-                                      tmod_dbs=data[["tmod_dbs"]], 
-                                      cntr    =data[["cntr"]], 
-                                      tmod_map=data[["tmod_map"]], 
-                                      tmod_gl =data[["tmod_gl"]], 
-                                      annot   =data[["annot"]],
-                                      tmod_res=data[["tmod_res"]],
-                                      gene_id=gene_id)
- 
-    discoServer("disco", data[["cntr"]], data[["annot"]], gene_id=gene_id)
- 
-    tmodBrowserTableServer("tmodT", data[["tmod_res"]], gs_id=gs_id, 
-                           multilevel=TRUE, tmod_dbs=data[["tmod_dbs"]])
-    tmodPanelPlotServer("panelP", cntr    =data[["cntr"]], 
-                                  tmod_res=data[["tmod_res"]],
-                                  tmod_dbs=data[["tmod_dbs"]], 
-                                  tmod_map=data[["tmod_map"]], 
-                                  annot   =data[["annot"]],
-                                  gs_id=gs_id)
- 
-    if(!is.null(data[["pca"]])) {
-      pcaServer("pca", data[["pca"]], data[["covar"]])
-    }
+    discoServer("disco", x[["cntr"]], x[["annot"]], gene_id=gene_id)
 
-    volcanoServer("volcano", data[["cntr"]], annot=data[["annot"]], gene_id=gene_id)
-    
-    observeEvent(gs_id$id, { 
-      updateTabItems(session, "navid", "tmod_browser")
-    })
- 
-    ## combine events selecting a gene from gene browser and from disco
+    ## whenever gene_id$id changes, navigate to the gene browser
     observeEvent(gene_id$id, {
       updateTabItems(session, "navid", "gene_browser")
     })
- 
+
     if(debug_panel) {
+      message("Using debug panel")
       output$debugTab <- renderTable({
         objects <- ls(env)
         sizes <- unlist(lapply(objects, function(x) {
@@ -375,8 +359,30 @@ seapiper <- function(x, title="Workflow output explorer",
       })
     }
 
-    }#XXX
+ 
+    tmodBrowserPlotServer("tmodP", gs_id, 
+                                      tmod_dbs=x[["tmod_dbs"]], 
+                                      cntr    =x[["cntr"]], 
+                                      tmod_map=x[["tmod_map"]], 
+                                      tmod_gl =x[["tmod_gl"]], 
+                                      annot   =x[["annot"]],
+                                      tmod_res=x[["tmod_res"]],
+                                      gene_id=gene_id)
+ 
+ 
+    tmodBrowserTableServer("tmodT", x[["tmod_res"]], gs_id=gs_id, 
+                           multilevel=TRUE, tmod_dbs=x[["tmod_dbs"]])
+    tmodPanelPlotServer("panelP", cntr    =x[["cntr"]], 
+                                  tmod_res=x[["tmod_res"]],
+                                  tmod_dbs=x[["tmod_dbs"]], 
+                                  tmod_map=x[["tmod_map"]], 
+                                  annot   =x[["annot"]],
+                                  gs_id=gs_id)
+ 
+    if(!is.null(x[["pca"]])) { pcaServer("pca", x[["pca"]], x[["covar"]]) }
 
+    observeEvent(gs_id$id, { updateTabItems(session, "navid", "tmod_browser") })
+ 
   }
 
   shinyApp(ui, server)

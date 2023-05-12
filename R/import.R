@@ -13,13 +13,13 @@
 #'
 #' Construct a new seapiper data set from individual objects
 #'
+#' XXX Details XXX
 #' @param cntr Contrasts: a list of contrasts. If the list is unnamed, then
 #' names will be generated (ID1, ID2, ...). Each element of the list must
 #' be a data frame or an object that can be converted to a data frame. If
 #' the column with primary identifiers (i.e., column with the name
 #' "PrimaryID" or whatever is given by the primary_id parameter) is missing, then row names will be
-#' saved to that column. If both the column with primary IDs and row names
-#' are missing, an error will be raised.
+#' saved to that column.
 #' @param tmod_res Optional: Results of the gene set enrichment analysis. If the list is unnamed, then
 #' names will be generated (ID1, ID2, ...). The sets of names of `tmod_res`
 #' and `cntr` must be equal (that is, there should be an element for each
@@ -28,16 +28,19 @@
 #' with gene set enrichment results
 #' @param annot Annotation data frame. If defined, the column indicated by
 #' the `primary_id` parameter must be present; alternatively, the rows
-#' define the primary gene IDs. If both `primary_id` and row names are
-#' missing, an error is raised.
+#' define the primary gene IDs.
 #' @param tmod_dbs Optional: A named list of gene set databases. See "Details".
 #' @param tmod_map Optional: an object defining mapping between the gene
 #' set databases and the `primary_id` column from the contrasts. See
 #' "Details".
+#' @param tmod_gl Optional: a named list of ordered gene_ids which were
+#' used to derive the gene set enrichment results. If absent, they will be
+#' automatically generated from the contrasts when seaPiper is started. See "Details".
 #' @param primary_id Name of the column in contrast data frames and in the
 #' annotation data frame which holds the primary gene identifier.
 #' @param exprs data frame or matrix containing the normalized expression
 #' values
+#' @param pca optional prcomp object returned by the prcomp() function
 #' @return An object of the class seapiper_ds
 #' @rdname seapiper_ds
 #' @export
@@ -52,9 +55,9 @@ new_seapiper_dataset <- function(
                                  annot      = NULL,
                                  primary_id = "PrimaryID",
                                  tmod_dbs   = NULL,
-                                 tmod_map   = NULL
-
-  
+                                 tmod_map   = NULL,
+                                 tmod_gl    = NULL,
+                                 pca        = NULL
   #primary_id, annot, cntr, tmod_res, tmod_dbs,
                                           #contrast_cols=c(primary_id, "log2FoldChange", "pvalue", "padj"),
                                           #save_memory=FALSE
@@ -88,7 +91,10 @@ new_seapiper_dataset <- function(
   if(is.matrix(exprs)) {
     message("Converting exprs matrix to data frame")
     exprs <- as.data.frame(exprs)
+  } else if(!is.data.frame(exprs)) {
+    stop("exprs must be a matrix or a data frame")
   }
+
   ret$exprs       <- exprs
 
   stopifnot(is.data.frame(covar))
@@ -96,6 +102,7 @@ new_seapiper_dataset <- function(
 
   message("checking tmod res")
   if(!is.null(tmod_res)) {
+
     if(is.null(names(tmod_res))) {
       names(tmod_res) <- paste0("ID", seq_along(tmod_res))
     }
@@ -110,7 +117,13 @@ new_seapiper_dataset <- function(
     ret$annot <- .check_df_primary_id(annot, primary_id)
   }
 
-  message("returning")
+  # XXX run checks
+  ret$tmod_gl  <- tmod_gl
+  ret$tmod_dbs <- tmod_dbs
+  ret$tmod_map <- tmod_map
+  ret$pca      <- pca
+
+  message("returning seaPiper object")
   class(ret) <- c("seapiper_ds", class(ret))
   attr(ret, "primary_id") <- primary_id
   ret
@@ -124,20 +137,45 @@ new_seapiper_dataset <- function(
 #' @export
 print.seapiper_ds <- function(x, ...) {
   .catf("Object of class seapiper_ds\n")
+  .catf("  %d contrasts\n", length(x$cntr))
+}
+
+.prepare_tmod_gl <- function(cntr, primary_id, pval_col) {
+  stop("how come")
+
 }
 
 
-
 ## make sure everything is where it is needed
-.prepare_data <- function(x, primary_id, annot_default=NULL, tmod_dbs_default=NULL, tmod_map_default=NULL, save_memory=FALSE) {
+.prepare_data <- function(x, primary_id, annot_default=NULL, tmod_dbs_default=NULL, tmod_map_default=NULL, save_memory=FALSE,
+                          pval_col, lfc_col) {
 
   data <- imap(x, ~ {
     .id  <- .y
+    .ds  <- .x
     #.prepare_data_single_pipeline(.id, .pip, primary_id, annot, cntr, tmod_res, tmod_dbs, save_memory=save_memory)
-    if(is.null(.x$annot))    .x$annot    <- annot_default
-    if(is.null(.x$tmod_map)) .x$tmod_map <- tmod_map_default
-    if(is.null(.x$tmod_dbs)) .x$tmod_dbs <- tmod_dbs_default
-    .x
+    if(is.null(.ds$annot))    {
+      if(!is.null(annot_default)) {
+        message("annotation data frame is missing from contrast", .id, "using default")
+        .ds$annot    <- annot_default
+      } else {
+        stop(paste("annotation data frame is missing from contrast", .id, "and no default was provided"))
+      }
+    }
+
+    if(is.null(.ds$cntr))     stop(paste("contrast data frame is missing from data set", .id))
+    .ds$cntr <- imap(.ds$cntr, ~ {
+                     if(is.null(.x[[primary_id]])) {
+                       message("dataset", .id, "contrast", .y, 
+                               "does not have a primary ID column in contrasts, adding one from rownames")
+                       .x[[primary_id]] <- rownames(.x)
+                     }
+                     .x
+    })
+    if(is.null(.ds$tmod_map)) .ds$tmod_map <- tmod_map_default
+    if(is.null(.ds$tmod_dbs)) .ds$tmod_dbs <- tmod_dbs_default
+    if(is.null(.ds$tmod_gl))  warning("tmod_gl is missing from data set", .id)
+    .ds
   })
 
   return(transpose(data))
