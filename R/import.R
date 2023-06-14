@@ -1,19 +1,14 @@
-# check that data frame contains primary ID. If not
-# create primary ID column and populate it with
-# row names. 
-.check_df_primary_id <- function(x, primary_id) {
-  if(!is.data.frame(x)) { x <- as.data.frame(x) }
-  if(primary_id %in% colnames(x)) { return(x) }
-
-  x[[primary_id]] <- row.names(x)
-  x
-}
+##' @title Construct a new seapiper data set from a yaml file
 
 #' Construct a new seapiper data set from individual objects
 #'
 #' Construct a new seapiper data set from individual objects
 #'
 #' XXX Details XXX
+#' This function assembles a new seapiper data set from individual objects.
+#' Some of this objects are relatively simple, while others rather complex.
+#' In especially, the results of gene set enrichments may be quite complex.
+#'
 #' @param cntr Contrasts: a list of contrasts. If the list is unnamed, then
 #' names will be generated (ID1, ID2, ...). Each element of the list must
 #' be a data frame or an object that can be converted to a data frame. If
@@ -145,7 +140,6 @@ print.seapiper_ds <- function(x, ...) {
 
 }
 
-
 ## make sure everything is where it is needed
 .prepare_data <- function(x, primary_id, annot_default=NULL, tmod_dbs_default=NULL, tmod_map_default=NULL, save_memory=FALSE,
                           pval_col, lfc_col) {
@@ -180,6 +174,18 @@ print.seapiper_ds <- function(x, ...) {
 
   return(transpose(data))
 }
+
+# check that data frame contains primary ID. If not
+# create primary ID column and populate it with
+# row names. 
+.check_df_primary_id <- function(x, primary_id) {
+  if(!is.data.frame(x)) { x <- as.data.frame(x) }
+  if(primary_id %in% colnames(x)) { return(x) }
+
+  x[[primary_id]] <- row.names(x)
+  x
+}
+
 
 ## prepares the data structure for a single pipeline
 .prepare_data_single_pipeline <- function(.id, .pip, primary_id, annot, cntr, tmod_res, tmod_dbs,
