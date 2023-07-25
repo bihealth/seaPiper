@@ -385,7 +385,7 @@ seapiper <- function(x, title="Workflow output explorer",
  
   }
 
-  shinyApp(ui, server)
+  shinyApp(ui, server, options=list(display.mode="showcase"))
 }
 
 
