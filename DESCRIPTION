@@ -27,3 +27,4 @@ Imports:
   thematic,
   tibble,
   bioshmods (>= 0.0.0.9001)
+URL: https://bihealth.github.io/seaPiper/

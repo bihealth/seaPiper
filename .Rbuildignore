@@ -1,3 +1,7 @@
 ^LICENSE\.md$
 ^README\.Rmd$
 ^logo$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^\.github$
