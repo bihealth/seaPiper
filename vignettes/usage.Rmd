@@ -1,0 +1,29 @@
+---
+title: "seaPiper usage"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{seaPiper usage}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Introduction
+
+seaPiper is a user interface to studying the results of differential gene
+expression analysis. Note that it does not allow any analysis per se. This
+is an important distinction: the analysis results are generated using a
+pipeline – that allows them to be reproducible and well documented; every
+analysis result can be traced back to the code that generated it, versions
+of packages used to generate it etc. Analyses performed interactively (in a
+graphical user interface), for example in a browser, are notoriously hard
+to perform in a way that is accountable and reproducible.
+
+
+
