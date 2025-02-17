@@ -1,0 +1,8 @@
+pandoc: 2.19.2
+pkgdown: 2.1.0
+pkgdown_sha: ~
+articles: {}
+last_built: 2025-02-17T11:11Z
+urls:
+  reference: https://bihealth.github.io/seaPiper/reference
+  article: https://bihealth.github.io/seaPiper/articles
