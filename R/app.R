@@ -45,35 +45,6 @@
 #'   seapiper(data)
 #' }
 #' @export
-## determine which tabs to show based on available data
-.seapiper_features <- function(data) {
-  ## check if a list contains any non-empty entries
-  has_list_data <- function(x) {
-    is.list(x) && length(x) > 0 &&
-      any(vapply(x, function(.x) !is.null(.x) && length(.x) > 0, logical(1)))
-  }
-
-  has_cntr  <- has_list_data(data[["cntr"]])
-  has_annot <- has_list_data(data[["annot"]])
-  has_covar <- has_list_data(data[["covar"]])
-  has_pca   <- has_list_data(data[["pca"]])
-
-  has_tmod_res <- has_list_data(data[["tmod_res"]])
-  has_tmod_dbs <- has_list_data(data[["tmod_dbs"]])
-  has_tmod_map <- has_list_data(data[["tmod_map"]])
-  has_tmod_gl  <- has_list_data(data[["tmod_gl"]])
-
-  list(
-    gene_browser = has_cntr && has_annot,
-    volcano      = has_cntr,
-    tmod         = has_tmod_res && has_tmod_dbs && has_tmod_map && has_tmod_gl,
-    tmod_panel   = has_tmod_res && has_tmod_dbs && has_tmod_map && has_annot,
-    disco        = has_cntr && has_annot,
-    pca          = has_pca && has_covar,
-    info         = has_list_data(data[["config"]]) && has_covar
-  )
-}
-
 seapiper <- function(data, title="Workflow output explorer", 
                              debug_panel=FALSE) {
   env <- environment()  # can use globalenv(), parent.frame(), etc
@@ -93,7 +64,15 @@ seapiper <- function(data, title="Workflow output explorer",
   thematic_shiny(font="auto")
 
   ## Prepare the UI
-  features <- .seapiper_features(data)
+  validation <- validate_seapiperdata(data)
+  features <- validation$features
+
+  if(length(validation$missing) > 0) {
+    details <- vapply(names(validation$missing), function(name) {
+      sprintf("%s (missing: %s)", name, paste(validation$missing[[name]], collapse=", "))
+    }, character(1))
+    message("seaPiper: disabled modules: ", paste(details, collapse="; "))
+  }
   header  <- .pipeline_dashboard_header(title)     
   sidebar <- .pipeline_dashboard_sidebar(features=features, debug_panel=debug_panel)
   body    <- .pipeline_dashboard_body(data, title, features=features, debug_panel=debug_panel)
@@ -107,28 +86,6 @@ seapiper <- function(data, title="Workflow output explorer",
 
   server <- function(input, output, session) {
 
-    ## pipeline browser specific functions
-    if(isTRUE(features$info)) {
-      observeEvent(input$select_pipeline, {
-        ds <- input$select_pipeline
-        if(!isTruthy(ds)) {
-          return(NULL)
-        }
-                     
-      output$project_overview   <- renderTable({ 
-        project_overview_table(data[["config"]][[ds]], title) 
-      })
-      output$contrasts_overview <- renderTable({ 
-        contrasts_overview_table(data[["config"]][[ds]]) })
-      output$covariates         <- renderDT({ 
-        covariate_table(data[["covar"]][[ds]]) 
-        })
-      output$session_info <- renderPrint(
-                                         sessionInfo()
-                                         )
-      })
-    }
-
     ## this reactive value holds the id of the selected gene, however the
     ## selection has been done
     gene_id <- reactiveValues()
@@ -136,70 +93,23 @@ seapiper <- function(data, title="Workflow output explorer",
     ## this is reactive value for gene sets
     gs_id   <- reactiveValues()
 
+    if(isTRUE(features$info)) {
+      .seapiper_server_info(input, output, session, data, title)
+    }
+
     if(isTRUE(features$gene_browser)) {
-      geneBrowserTableServer("geneT", data[["cntr"]], data[["annot"]], 
-        annot_linkout=data[["annot_linkout"]],
-        gene_id=gene_id)
+      .seapiper_server_gene(input, output, session, data, gene_id)
     }
 
     if(isTRUE(features$tmod)) {
-      tmodBrowserPlotServer("tmodP", gs_id, 
-                                        tmod_dbs=data[["tmod_dbs"]], 
-                                        cntr    =data[["cntr"]], 
-                                        tmod_map=data[["tmod_map"]], 
-                                        tmod_gl =data[["tmod_gl"]], 
-                                        annot   =data[["annot"]],
-                                        tmod_res=data[["tmod_res"]],
-                                        gene_id=gene_id)
-    }
- 
-    if(isTRUE(features$disco)) {
-      discoServer("disco", data[["cntr"]], data[["annot"]], gene_id=gene_id)
-    }
- 
-    if(isTRUE(features$tmod)) {
-      tmodBrowserTableServer("tmodT", data[["tmod_res"]], gs_id=gs_id, 
-                             multilevel=TRUE, tmod_dbs=data[["tmod_dbs"]])
+      .seapiper_server_tmod(input, output, session, data, gs_id, gene_id,
+                            enable_panel=isTRUE(features$tmod_panel))
     }
 
-    if(isTRUE(features$tmod_panel)) {
-      tmodPanelPlotServer("panelP", cntr    =data[["cntr"]], 
-                                    tmod_res=data[["tmod_res"]],
-                                    tmod_dbs=data[["tmod_dbs"]], 
-                                    tmod_map=data[["tmod_map"]], 
-                                    annot   =data[["annot"]],
-                                    gs_id=gs_id)
-    }
- 
-    if(isTRUE(features$pca)) {
-      pcaServer("pca", data[["pca"]], data[["covar"]])
-    }
-
-    if(isTRUE(features$volcano)) {
-      volcanoServer("volcano", data[["cntr"]], annot=data[["annot"]], gene_id=gene_id)
-    }
-    
-    if(isTRUE(features$tmod)) {
-      observeEvent(gs_id$id, { 
-        updateTabItems(session, "navid", "tmod_browser")
-      })
-    }
- 
-    ## combine events selecting a gene from gene browser and from disco
-    if(isTRUE(features$gene_browser)) {
-      observeEvent(gene_id$id, {
-        updateTabItems(session, "navid", "gene_browser")
-      })
-    }
- 
-    if(isTRUE(features$gene_browser)) {
-      geneBrowserPlotServer("geneP", gene_id, covar=data[["covar"]], 
-                            exprs=data[["rld"]], annot=data[["annot"]], 
-                            annot_linkout=data[["annot_linkout"]],
-                            cntr=data[["cntr"]],
-                            exprs_label = "Regularized log transformed expression (rlog)"
-      )
-    }
+    .seapiper_server_misc(input, output, session, data, gene_id,
+                          enable_disco=isTRUE(features$disco),
+                          enable_volcano=isTRUE(features$volcano),
+                          enable_pca=isTRUE(features$pca))
 
     if(debug_panel) {
       output$debugTab <- renderTable({
