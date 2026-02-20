@@ -65,25 +65,53 @@ helpUI <- function() {
 }
 
 
-.pipeline_dashboard_sidebar <- function(debug_panel=FALSE) {
-  menus <- list(
+.pipeline_dashboard_sidebar <- function(features, debug_panel=FALSE) {
+  menus <- list()
+
+  if(isTRUE(features$gene_browser)) {
+    menus <- c(menus, list(
          tipify(menuItem("Gene browser",  tabName = "gene_browser", icon = icon("dna")),
-                "Browse genes and view gene expression", placement="right"),
+                "Browse genes and view gene expression", placement="right")))
+  }
+
+  if(isTRUE(features$volcano)) {
+    menus <- c(menus, list(
          tipify(menuItem("Volcano plots",  tabName = "volcano_plots", icon = icon("mountain",
                                                                                   class="fa-rotate-180")),
-                "Browse genes and view gene expression", placement="right"),
+                "Browse genes and view gene expression", placement="right")))
+  }
+
+  if(isTRUE(features$tmod)) {
+    menus <- c(menus, list(
          tipify(menuItem("Tmod browser",  tabName = "tmod_browser", icon = icon("project-diagram")),
-                "Browse gene set enrichments", placement="right"),
+                "Browse gene set enrichments", placement="right")))
+  }
+
+  if(isTRUE(features$disco)) {
+    menus <- c(menus, list(
          tipify(menuItem("Disco plots",   tabName = "disco", icon = icon("chart-line")),
-                "Compare contrasts", placement="right"),
+                "Compare contrasts", placement="right")))
+  }
+
+  if(isTRUE(features$tmod_panel)) {
+    menus <- c(menus, list(
          tipify(menuItem("Panel plots",   tabName = "panel_plot", icon = icon("grip-vertical")),
-                "Overview of gene set enrichments", placement="right"),
+                "Overview of gene set enrichments", placement="right")))
+  }
+
+  if(isTRUE(features$pca)) {
+    menus <- c(menus, list(
          tipify(menuItem("PCA",           tabName = "pca", icon = icon("cube")),
-                "Principal component analysis", placement="right"),
+                "Principal component analysis", placement="right")))
+  }
+
+  if(isTRUE(features$info)) {
+    menus <- c(menus, list(
          tipify(menuItem("Workflow Info", tabName = "pip_info", icon = icon("info-circle")),
-                "View workflow parameters", placement="right"),
-         menuItem("Help",          tabName = "help", icon = icon("question-circle"))
-         )
+                "View workflow parameters", placement="right")))
+  }
+
+  menus <- c(menus, list(menuItem("Help", tabName = "help", icon = icon("question-circle"))))
 
   if(debug_panel) {
     menus <- c(menus, list(menuItem("|DeBuG|", tabName = "os", icon = icon("bug"))))
@@ -104,7 +132,7 @@ helpUI <- function() {
 
 
 ## prepare the actual tabs UI
-.pipeline_dashboard_body <- function(data, title, debug_panel=FALSE) {
+.pipeline_dashboard_body <- function(data, title, features, debug_panel=FALSE) {
 
   npip <- length(data[[1]])
 
@@ -113,54 +141,86 @@ helpUI <- function() {
   cntr_titles <- data[["cntr_titles"]]
   covar       <- data[["covar"]]
 
-      t1 <- tabItem("gene_browser",
-         box(title=p("Gene table ", icon("question-circle")),
-                     width=12, status="primary", 
-             collapsible=TRUE,
-             solidHeader=TRUE, geneBrowserTableUI("geneT", cntr_titles)),
-         box(title="Gene info",  width=12, status="primary", 
-             collapsible=TRUE,
-             solidHeader=TRUE, geneBrowserPlotUI("geneP", contrasts=TRUE)),
-        useShinyjs()
-      )
-    t10 <- tabItem("volcano_plots", 
-         box(title="Volcano plots", width=12, status="primary", 
-             collapsible=TRUE,
-             solidHeader=TRUE, volcanoUI("volcano", pipelines))
-         )
- 
-    t2 <- tabItem("tmod_browser",
-       box(title="Gene set enrichment overview", width=12, status="primary",
-           collapsible=TRUE,
-           solidHeader=TRUE, tmodBrowserTableUI("tmodT", cntr_titles, upset_pane=TRUE)),
-       box(title="Evidence plot", width=12, status="primary",
-           collapsible=TRUE,
-           solidHeader=TRUE, tmodBrowserPlotUI("tmodP"))
-    )
-    t3 <- tabItem("disco",
-       box(title="Discordance / concordance plots", width=12, status="primary",
-       height="800px", solidHeader=TRUE, discoUI("disco", cntr_titles)),
-       )
-    t4 <- tabItem("panel_plot",
-       box(title="Panel plot", width=12, status="primary",
-           solidHeader=TRUE, tmodPanelPlotUI("panelP", pipelines)))
-    t5 <- tabItem("pca",
-       box(title="Principal Component Analysis", width=12, status="primary",
-       solidHeader=TRUE, pcaUI("pca", pipelines)),
-       useShinyjs()
-       )
-    t6 <- tabItem("pip_info", 
-         infoUI(pipelines))
-         
-    t7 <- tabItem("help", helpUI())
-    t8 <- tabItem("os", fluidPage(h1("test"), tableOutput("debugTab")))
+    tabs <- list()
 
+    if(isTRUE(features$gene_browser)) {
+      tabs <- c(tabs, list(
+        tabItem("gene_browser",
+          box(title=p("Gene table ", icon("question-circle")),
+                      width=12, status="primary", 
+              collapsible=TRUE,
+              solidHeader=TRUE, geneBrowserTableUI("geneT", cntr_titles)),
+          box(title="Gene info",  width=12, status="primary", 
+              collapsible=TRUE,
+              solidHeader=TRUE, geneBrowserPlotUI("geneP", contrasts=TRUE)),
+         useShinyjs()
+        )
+      ))
+    }
+
+    if(isTRUE(features$volcano)) {
+      tabs <- c(tabs, list(
+        tabItem("volcano_plots", 
+          box(title="Volcano plots", width=12, status="primary", 
+              collapsible=TRUE,
+              solidHeader=TRUE, volcanoUI("volcano", pipelines))
+        )
+      ))
+    }
+
+    if(isTRUE(features$tmod)) {
+      tabs <- c(tabs, list(
+        tabItem("tmod_browser",
+          box(title="Gene set enrichment overview", width=12, status="primary",
+              collapsible=TRUE,
+              solidHeader=TRUE, tmodBrowserTableUI("tmodT", cntr_titles, upset_pane=TRUE)),
+          box(title="Evidence plot", width=12, status="primary",
+              collapsible=TRUE,
+              solidHeader=TRUE, tmodBrowserPlotUI("tmodP"))
+        )
+      ))
+    }
+
+    if(isTRUE(features$disco)) {
+      tabs <- c(tabs, list(
+        tabItem("disco",
+          box(title="Discordance / concordance plots", width=12, status="primary",
+          height="800px", solidHeader=TRUE, discoUI("disco", cntr_titles))
+        )
+      ))
+    }
+
+    if(isTRUE(features$tmod_panel)) {
+      tabs <- c(tabs, list(
+        tabItem("panel_plot",
+          box(title="Panel plot", width=12, status="primary",
+              solidHeader=TRUE, tmodPanelPlotUI("panelP", pipelines)))
+      ))
+    }
+
+    if(isTRUE(features$pca)) {
+      tabs <- c(tabs, list(
+        tabItem("pca",
+          box(title="Principal Component Analysis", width=12, status="primary",
+          solidHeader=TRUE, pcaUI("pca", pipelines)),
+          useShinyjs()
+        )
+      ))
+    }
+
+    if(isTRUE(features$info)) {
+      tabs <- c(tabs, list(
+        tabItem("pip_info", infoUI(pipelines))
+      ))
+    }
+         
+    tabs <- c(tabs, list(tabItem("help", helpUI())))
 
     if(debug_panel) {
-      tbit <- tabItems( t1, t10, t2, t3, t4, t5, t6, t7, t8)
-    } else {
-      tbit <- tabItems( t1, t10, t2, t3, t4, t5, t6, t7)
+      tabs <- c(tabs, list(tabItem("os", fluidPage(h1("test"), tableOutput("debugTab")))))
     }
+
+    tbit <- do.call(tabItems, tabs)
 
   dashboardBody(
     tbit,
