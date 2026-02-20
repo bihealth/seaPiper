@@ -53,10 +53,11 @@
     ret[["tmod_dbs"]] <- tmod_dbs[[.id]]
   }
 
-  ## get rid of unnecessary data
-  for(i in 1:length(ret[["tmod_dbs"]])) {
-    ret[["tmod_dbs"]][[i]][["dbobj"]][["GENES2MODULES"]] <- NULL
-  }
+ ## no longer necessary with the new tmod mset structure
+ # ## get rid of unnecessary data
+ #for(i in 1:length(ret[["tmod_dbs"]])) {
+ #  ret[["tmod_dbs"]][[i]][["dbobj"]][["GENES2MODULES"]] <- NULL
+ #}
 
   ## we only want the tmod object
   ret[["tmod_dbs"]] <- map(ret[["tmod_dbs"]], ~ .x$dbobj)
@@ -74,7 +75,7 @@
 
   ret[["annot_linkout"]] <- .prep_annot_linkout(ret[["annot"]], ret[["config"]])
 
-  ret[["dbs"]]     <- names(tmod_dbs)
+  ret[["dbs"]]     <- names(ret[["tmod_dbs"]])
   ret[["sorting"]] <- ret[["config"]]$tmod$sort_by
 
   ret[["rld"]]     <- get_object(.pip, step="DESeq2", extension="rld.blind.rds")
