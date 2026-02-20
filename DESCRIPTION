@@ -26,7 +26,7 @@ Imports:
   ggplot2,
   thematic,
   tibble,
-  bioshmods (>= 0.0.0.9001)
+  bioshmods (>= 0.0.0.9004)
 URL: https://bihealth.github.io/seaPiper/
 Suggests: 
     knitr,
