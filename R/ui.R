@@ -41,7 +41,7 @@ infoUI <- function(datasets) {
 
 ## UI for the help system
 helpUI <- function() {
-  help_dir <- system.file("seapiper_manual/", package="Rseasnap")
+  help_dir <- system.file("seapiper_manual/", package="seaPiper")
 
   help_files <- list.files(help_dir, full.names = TRUE)
 
