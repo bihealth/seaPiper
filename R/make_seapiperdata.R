@@ -8,18 +8,21 @@
 #' `experiment` (list with `design_formula`),
 #' `contrasts` (list with `contrast_list`, each having `ID` and `title`),
 #' `tmod` (list with `databases` and `sort_by`),
-#' `filter` (list with `low_counts`, `min_counts`, `min_count_n`).
+#' `filter` (list with `low_counts`, `min_counts`, `min_count_n`),
+#' `dataset_title` (string, defaults to "default").
 #' @param cntr named list of contrast data frames
 #' @param annot annotation data frame
 #' @param exprs expression matrix (genes x samples)
 #' @param primary_id primary gene identifier column name
 #' @param covar optional covariate data frame (samples x variables)
 #' @param config optional configuration list; if NULL, defaults are created
+#' @param title optional dataset title stored in `config$dataset_title`
 #' @export
 make_seapiperdata <- function(cntr, annot, exprs,
                               primary_id="PrimaryID",
                               covar=NULL,
-                              config=NULL) {
+                              config=NULL,
+                              title=NULL) {
   stopifnot(is.list(cntr))
   stopifnot(is.data.frame(annot))
   stopifnot(is.matrix(exprs) || is.data.frame(exprs))
@@ -71,8 +74,15 @@ make_seapiperdata <- function(cntr, annot, exprs,
       experiment = list(design_formula="not_set"),
       contrasts  = list(contrast_list=map(names(cntr), ~ list(ID=.x, title=.x))),
       tmod       = list(databases=list(), sort_by=character(0)),
-      filter     = list(low_counts=NA_integer_, min_counts=NA_integer_, min_count_n=NA_integer_)
+      filter     = list(low_counts=NA_integer_, min_counts=NA_integer_, min_count_n=NA_integer_),
+      dataset_title = if(is.null(title)) "default" else title
     )
+  } else if(is.null(config$dataset_title)) {
+    if(!is.null(title)) {
+      config$dataset_title <- title
+    } else {
+      config$dataset_title <- "default"
+    }
   }
 
   cntr_titles <- map_chr(config$contrasts$contrast_list, `[[`, "ID")

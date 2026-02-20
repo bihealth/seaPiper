@@ -55,6 +55,10 @@
   ret[["config"]]   <- get_config(.pip)
   ret[["covar"]]    <- get_covariates(.pip)
 
+  if(is.null(ret[["config"]][["dataset_title"]])) {
+    ret[["config"]][["dataset_title"]] <- .id
+  }
+
   ret[["annot_linkout"]] <- .prep_annot_linkout(ret[["annot"]], ret[["config"]])
 
   ret[["dbs"]]     <- names(ret[["tmod_dbs"]])

@@ -137,6 +137,13 @@ helpUI <- function() {
   npip <- length(data[[1]])
 
   pipelines <- names(data[[1]])
+  pipeline_titles <- vapply(data[["config"]], function(cfg) {
+    if(is.null(cfg$dataset_title)) { return(NA_character_) }
+    as.character(cfg$dataset_title)
+  }, character(1))
+  pipeline_titles[is.na(pipeline_titles)] <- pipelines[is.na(pipeline_titles)]
+  pipeline_choices <- pipelines
+  names(pipeline_choices) <- pipeline_titles
 
   cntr_titles <- data[["cntr_titles"]]
   covar       <- data[["covar"]]
@@ -163,7 +170,7 @@ helpUI <- function() {
         tabItem("volcano_plots", 
           box(title="Volcano plots", width=12, status="primary", 
               collapsible=TRUE,
-              solidHeader=TRUE, volcanoUI("volcano", pipelines))
+              solidHeader=TRUE, volcanoUI("volcano", pipeline_choices))
         )
       ))
     }
@@ -194,7 +201,7 @@ helpUI <- function() {
       tabs <- c(tabs, list(
         tabItem("panel_plot",
           box(title="Panel plot", width=12, status="primary",
-              solidHeader=TRUE, tmodPanelPlotUI("panelP", pipelines)))
+              solidHeader=TRUE, tmodPanelPlotUI("panelP", pipeline_choices)))
       ))
     }
 
@@ -202,7 +209,7 @@ helpUI <- function() {
       tabs <- c(tabs, list(
         tabItem("pca",
           box(title="Principal Component Analysis", width=12, status="primary",
-          solidHeader=TRUE, pcaUI("pca", pipelines)),
+          solidHeader=TRUE, pcaUI("pca", pipeline_choices)),
           useShinyjs()
         )
       ))
@@ -210,7 +217,7 @@ helpUI <- function() {
 
     if(isTRUE(features$info)) {
       tabs <- c(tabs, list(
-        tabItem("pip_info", infoUI(pipelines))
+        tabItem("pip_info", infoUI(pipeline_choices))
       ))
     }
          
