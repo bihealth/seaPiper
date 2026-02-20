@@ -264,7 +264,7 @@ helpUI <- function() {
 
   ## prepare the PCA
   mtx <- t(ret[["rld"]])
-  vars <- order(apply(mtx, 2, var), decreasing=TRUE)
+  vars <- apply(mtx, 2, var)
   sel  <- vars > 1e-26
   ret[["pca"]] <- prcomp(mtx[ , sel], scale.=TRUE)$x
   
