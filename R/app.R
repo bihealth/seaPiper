@@ -8,16 +8,8 @@
 #' Launching is much faster if the large objects (contrasts, tmod
 #' databases) do not need to be loaded each time the pipeline browser is
 #' started.
-#' @param pip pipeline returned by `load_de_pipeline`
-#' @param annot annotation returned by `get_annot`
-#' @param cntr contrasts list returned by `get_contrasts`
-#' @param tmod_dbs tmod databases returned by `get_tmod_dbs`
-#' @param tmod_res tmod results returned by `get_tmod_res`
-#' @param primary_id name of the column in the annotion data frame
-#'        which corresponds to the primary gene identifier (including the
-#'        row names of the contrasts results in the cntr object)
+#' @param data a `seaPiperData` object created by `rseasnap_to_seapiperdata`
 #' @param title Name of the pipeline to display
-#' @param only_data return the processed data and exit
 #' @param debug_panel show a debugging panel
 #' @importFrom purrr %>%
 #' @importFrom shiny renderImage tags img icon imageOutput includeMarkdown
@@ -44,39 +36,23 @@
 #' @importFrom bioshmods geneBrowserTableUI geneBrowserPlotUI volcanoUI tmodBrowserTableUI
 #' @importFrom bioshmods tmodBrowserPlotUI discoUI tmodPanelPlotUI pcaUI
 #' @importFrom utils sessionInfo object.size
-#' @importFrom Rseasnap load_de_pipeline 
-#' @importFrom Rseasnap get_tmod_res get_tmod_dbs get_tmod_mapping get_config
-#' @importFrom Rseasnap get_covariates get_object get_annot get_contrasts 
 #' @examples
 #' if(interactive()) {
 #'   example_dir <- system.file("extdata/example_pipeline", package="Rseasnap")
 #'   conf_f      <- file.path(example_dir, "DE_config.yaml")
 #'   pip         <- load_de_pipeline(config_file = conf_f)
-#'   pipeline_browser(pip)
+#'   data        <- rseasnap_to_seapiperdata(pip)
+#'   seapiper(data)
 #' }
 #' @export
-seapiper <- function(pip, title="Workflow output explorer", 
-                             annot=NULL, cntr=NULL, tmod_res=NULL, tmod_dbs=NULL,
-                             primary_id="PrimaryID",
-                             only_data=FALSE, 
+seapiper <- function(data, title="Workflow output explorer", 
                              debug_panel=FALSE) {
   env <- environment()  # can use globalenv(), parent.frame(), etc
   env <- .GlobalEnv
 
-  ## pip can be a pipeline or a list of pipelines. In this first case, we
-  ## change everything into a list.
-  if(is(pip, "seasnap_DE_pipeline")) {
-    pip <- list(default=pip)
-
-    if(!is.null(annot))    { annot    <- list(default=annot)    }
-    if(!is.null(cntr))     { cntr     <- list(default=cntr)     }
-    if(!is.null(tmod_res)) { tmod_res <- list(default=tmod_res) }
-    if(!is.null(tmod_dbs)) { tmod_dbs <- list(default=tmod_dbs) }
+  if(!inherits(data, "seaPiperData")) {
+    stop("`data` must be a seaPiperData object created by rseasnap_to_seapiperdata()")
   }
-
-  data <- .prepare_data(pip, primary_id, annot=annot, cntr=cntr, tmod_res=tmod_res, 
-                        tmod_dbs=tmod_dbs)
-  if(only_data) { return(data) }
 
   options(spinner.color="#47336F")
   options(spinner.type=6)
