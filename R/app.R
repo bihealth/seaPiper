@@ -81,8 +81,8 @@ seapiper <- function(pip, title="Workflow output explorer",
   options(spinner.color="#47336F")
   options(spinner.type=6)
 
-  addResourcePath("icons", system.file("icons", package="Rseasnap"))
-  addResourcePath("css",   system.file("css", package="Rseasnap"))
+  addResourcePath("icons", system.file("icons", package="seaPiper"))
+  addResourcePath("css",   system.file("css", package="seaPiper"))
 
   theme_set(theme_bw())
   thematic_shiny(font="auto")
