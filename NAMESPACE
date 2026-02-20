@@ -2,6 +2,7 @@
 
 export(seapiper)
 export(rseasnap_to_seapiperdata)
+export(make_seapiperdata)
 importFrom(DT,DTOutput)
 importFrom(DT,datatable)
 importFrom(DT,renderDT)
