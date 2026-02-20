@@ -172,7 +172,7 @@ helpUI <- function() {
 
 
 ## load missing objects, prepare the data etc.
-.prepare_data <- function(pip, primary_id, annot=NULL, cntr=NULL, tmod_res=NULL, tmod_dbs=NULL, save_memory=FALSE) {
+.prepare_data <- function(pip, primary_id, annot=NULL, cntr=NULL, tmod_res=NULL, tmod_dbs=NULL) {
 
   message("preparing...")
   if(is.null(annot))    { annot <- list() }
@@ -183,7 +183,7 @@ helpUI <- function() {
   data <- imap(pip, ~ {
     .pip <- .x
     .id  <- .y
-    .prepare_data_single_pipeline(.id, .pip, primary_id, annot, cntr, tmod_res, tmod_dbs, save_memory=save_memory)
+    .prepare_data_single_pipeline(.id, .pip, primary_id, annot, cntr, tmod_res, tmod_dbs)
   })
 
   return(transpose(data))
@@ -191,8 +191,7 @@ helpUI <- function() {
 
 ## prepares the data structure for a single pipeline
 .prepare_data_single_pipeline <- function(.id, .pip, primary_id, annot, cntr, tmod_res, tmod_dbs,
-                                          contrast_cols=c(primary_id, "log2FoldChange", "pvalue", "padj"),
-                                          save_memory=FALSE) {
+                                          contrast_cols=c(primary_id, "log2FoldChange", "pvalue", "padj")) {
   ret <- list()
 
   if(is.null(annot[[.id]])) {
@@ -200,10 +199,6 @@ helpUI <- function() {
     ret[["annot"]] <- get_annot(.pip)
   } else {
     ret[["annot"]] <- annot[[.id]]
-  }
-
-  if(save_memory) {
-    ret[["annot"]] <- as.disk.frame(ret[["annot"]])
   }
 
   if(is.null(cntr[[.id]])) {
@@ -217,10 +212,6 @@ helpUI <- function() {
                     ret <- .x %>% rownames_to_column(primary_id) 
                     ret[ , colnames(ret) %in% contrast_cols ]
                                           })
-  if(save_memory) {
-    ret[["cntr"]] <- map(ret[["cntr"]], ~ as.disk.frame(.x))
-  }
-
   if(is.null(tmod_res[[.id]])) {
     message(sprintf(" * Loading tmod results for %s (consider using the tmod_res option to speed this up)", .id))
     ret[["tmod_res"]] <- get_tmod_res(.pip)
@@ -296,10 +287,7 @@ helpUI <- function() {
 #'        row names of the contrasts results in the cntr object)
 #' @param title Name of the pipeline to display
 #' @param only_data return the processed data and exit
-#' @param save_memory if TRUE, then large objects (contrasts, annotations)
-#' will be used as disk.frame object. Slower, but more memory efficient.
 #' @param debug_panel show a debugging panel
-#' @importFrom disk.frame as.disk.frame
 #' @importFrom purrr %>%
 #' @importFrom shiny renderImage tags img icon imageOutput includeMarkdown
 #' @importFrom shiny addResourcePath
@@ -340,7 +328,6 @@ seapiper <- function(pip, title="Workflow output explorer",
                              annot=NULL, cntr=NULL, tmod_res=NULL, tmod_dbs=NULL,
                              primary_id="PrimaryID",
                              only_data=FALSE, 
-                             save_memory=FALSE,
                              debug_panel=FALSE) {
   env <- environment()  # can use globalenv(), parent.frame(), etc
   env <- .GlobalEnv
@@ -357,7 +344,7 @@ seapiper <- function(pip, title="Workflow output explorer",
   }
 
   data <- .prepare_data(pip, primary_id, annot=annot, cntr=cntr, tmod_res=tmod_res, 
-                        tmod_dbs=tmod_dbs, save_memory=save_memory)
+                        tmod_dbs=tmod_dbs)
   if(only_data) { return(data) }
 
   options(spinner.color="#47336F")
