@@ -2,6 +2,7 @@
 
 export(custom_yaml_to_seapiperdata)
 export(make_seapiperdata)
+export(merge_seapiperdata)
 export(rseasnap_to_seapiperdata)
 export(seapiper)
 export(seapiperdata_from_objects)
