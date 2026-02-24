@@ -58,7 +58,7 @@ helpUI <- function() {
 ## add the icon and a dropdown menu to page head
 .pipeline_dashboard_header <- function(title) {
 
-  dashboardHeader(title=img(src="icons/piper_horiz.png", alt="[seaPiper]"),
+  dashboardHeader(title=img(src="icons/piper_horiz.svg", alt="[seaPiper]", height="40px"),
     tags$li(class="dropdown", h4(title, style="font-size:22px;color:white;padding-right:20px;"))
   )
 
@@ -121,6 +121,7 @@ helpUI <- function() {
   dashboardSidebar(
        tags$head(
                  tags$link(rel = "stylesheet", type = "text/css", href = "css/seapiper.css"),
+                 tags$link(rel="icon", type="image/svg+xml", href="icons/favicon.svg"),
                  tags$link(rel="icon", type="image/png", sizes="32x32", href="icons/favicon-32x32.png"),
                  tags$link(rel="icon", type="image/png", sizes="16x16", href="icons/favicon-16x16.png"),
                  tags$link(rel="shortcut icon", type="image/x-icon", sizes="16x16", href="icons/favicon.ico")),

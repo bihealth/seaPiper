@@ -70,7 +70,7 @@ seapiper <- function(data, title="Workflow output explorer",
     stop("`data` must be a seaPiperData object")
   }
 
-  options(spinner.color="#47336F")
+  options(spinner.color="#06402B")
   options(spinner.type=6)
 
   addResourcePath("icons", system.file("icons", package="seaPiper"))
@@ -92,9 +92,9 @@ seapiper <- function(data, title="Workflow output explorer",
   header  <- .pipeline_dashboard_header(title)     
   sidebar <- .pipeline_dashboard_sidebar(features=features, debug_panel=debug_panel)
   body    <- .pipeline_dashboard_body(data, title, features=features, debug_panel=debug_panel)
-  ui <- dashboardPage(header, sidebar, body, skin="purple", title=title)
+  ui <- dashboardPage(header, sidebar, body, skin="green", title=title)
 
-  #   theme = bs_theme(primary = "#47336F", secondary = "#C6B3EB", 
+  #   theme = bs_theme(primary = "#06402B", secondary = "#8FB9AA", 
   #                           font_scale = NULL, 
   #                           `enable-shadows` = TRUE, 
   #                           bootswatch = "united"),
