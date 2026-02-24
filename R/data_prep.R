@@ -101,8 +101,8 @@
     ret[["sorting"]] <- NULL
   }
 
-  ret[["rld"]]     <- get_object(.pip, step="DESeq2", extension="rld.blind.rds")
-  ret[["rld"]]     <- assay(ret[["rld"]])
+  ret[["rld"]] <- get_object(.pip, step="DESeq2", extension="rld.blind.rds")
+  ret[["rld"]] <- .extract_rld_matrix(ret[["rld"]], .id)
 
   ## prepare the PCA
   mtx <- t(ret[["rld"]])
@@ -119,6 +119,45 @@
   }
 
   ret
+}
+
+# Extract an expression matrix from rld-like objects without Bioconductor generics.
+# Returns a numeric matrix (or stops with an informative error).
+.extract_rld_matrix <- function(x, dataset_id) {
+  if(is.null(x)) {
+    stop(sprintf("rld object is missing for dataset `%s`", dataset_id))
+  }
+
+  if(is.data.frame(x)) {
+    x <- as.matrix(x)
+  }
+  if(is.matrix(x)) {
+    return(x)
+  }
+
+  if(methods::isS4(x) && "assays" %in% methods::slotNames(x)) {
+    assays_obj <- methods::slot(x, "assays")
+    if(methods::isS4(assays_obj) && "data" %in% methods::slotNames(assays_obj)) {
+      assays_obj <- methods::slot(assays_obj, "data")
+    }
+    assays_list <- tryCatch(as.list(assays_obj), error=function(e) NULL)
+    if(!is.null(assays_list) && length(assays_list) > 0) {
+      first <- assays_list[[1]]
+      if(is.data.frame(first)) {
+        first <- as.matrix(first)
+      }
+      if(is.matrix(first)) {
+        return(first)
+      }
+    }
+  }
+
+  stop(
+    sprintf(
+      "Cannot extract matrix from rld object for dataset `%s`; expected matrix/data.frame or S4 object with assay data",
+      dataset_id
+    )
+  )
 }
 
 
