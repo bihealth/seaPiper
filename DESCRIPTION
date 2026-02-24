@@ -1,6 +1,6 @@
 Package: seaPiper
 Title: Workflow output explorer for the sea-snap pipeline
-Version: 0.1.1
+Version: 0.1.2
 Authors@R: 
     person(given = "January",
            family = "Weiner",
