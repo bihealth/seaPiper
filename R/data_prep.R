@@ -135,9 +135,9 @@
     return(x)
   }
 
-  if(methods::isS4(x) && "assays" %in% methods::slotNames(x)) {
+  if(base::isS4(x) && "assays" %in% methods::slotNames(x)) {
     assays_obj <- methods::slot(x, "assays")
-    if(methods::isS4(assays_obj) && "data" %in% methods::slotNames(assays_obj)) {
+    if(base::isS4(assays_obj) && "data" %in% methods::slotNames(assays_obj)) {
       assays_obj <- methods::slot(assays_obj, "data")
     }
     assays_list <- tryCatch(as.list(assays_obj), error=function(e) NULL)
