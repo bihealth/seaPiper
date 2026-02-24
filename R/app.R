@@ -8,7 +8,8 @@
 #' Launching is much faster if the large objects (contrasts, tmod
 #' databases) do not need to be loaded each time the pipeline browser is
 #' started.
-#' @param data a `seaPiperData` object created by `rseasnap_to_seapiperdata`
+#' @param data a `seaPiperData` object created by `seapiperdata_from_rseasnap`,
+#'        `seapiperdata_from_objects`, or `seapiperdata_from_yaml`
 #' @param title Name of the pipeline to display
 #' @param debug_panel show a debugging panel
 #' @importFrom purrr %>%
@@ -41,7 +42,7 @@
 #'   example_dir <- system.file("extdata/example_pipeline", package="Rseasnap")
 #'   conf_f      <- file.path(example_dir, "DE_config.yaml")
 #'   pip         <- load_de_pipeline(config_file = conf_f)
-#'   data        <- rseasnap_to_seapiperdata(pip)
+#'   data        <- seapiperdata_from_rseasnap(pip)
 #'   seapiper(data)
 #' }
 #' @export
@@ -50,8 +51,23 @@ seapiper <- function(data, title="Workflow output explorer",
   env <- environment()  # can use globalenv(), parent.frame(), etc
   env <- .GlobalEnv
 
+  required_bioshmods <- "0.0.0.9004"
+  installed_bioshmods <- as.character(utils::packageVersion("bioshmods"))
+  if(utils::compareVersion(installed_bioshmods, required_bioshmods) < 0) {
+    stop(
+      sprintf(
+        paste(
+          "seaPiper requires bioshmods >= %s, but %s is installed.",
+          "Install/update bioshmods from /home/january/Projects/R/bioshmods/bioshmods."
+        ),
+        required_bioshmods,
+        installed_bioshmods
+      )
+    )
+  }
+
   if(!inherits(data, "seaPiperData")) {
-    stop("`data` must be a seaPiperData object created by rseasnap_to_seapiperdata()")
+    stop("`data` must be a seaPiperData object")
   }
 
   options(spinner.color="#47336F")

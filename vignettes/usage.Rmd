@@ -25,5 +25,63 @@ of packages used to generate it etc. Analyses performed interactively (in a
 graphical user interface), for example in a browser, are notoriously hard
 to perform in a way that is accountable and reproducible.
 
+# Building `data` for `seapiper()`
 
+The `seapiper()` function expects a `seaPiperData` object (`data` argument).
+There are now three supported ways to create it:
 
+1. From a loaded `Rseasnap` pipeline:
+
+```{r eval=FALSE}
+pip <- Rseasnap::load_de_pipeline(config_file = "DE_config.yaml")
+data <- seapiperdata_from_rseasnap(pip)
+seapiper(data)
+```
+
+2. From in-memory objects:
+
+```{r eval=FALSE}
+data <- seapiperdata_from_objects(
+  cntr = cntr,
+  annot = annot,
+  exprs = exprs,
+  primary_id = "PrimaryID"
+)
+seapiper(data)
+```
+
+3. From a custom YAML file with RDS object paths:
+
+```{r eval=FALSE}
+data <- seapiperdata_from_yaml("seapiper_data.yaml")
+seapiper(data)
+```
+
+Example `seapiper_data.yaml`:
+
+```yaml
+datasets:
+  default:
+    annot: annot.rds
+    cntr: cntr.rds
+    tmod_res: tmod_res.rds
+    tmod_dbs: tmod_dbs.rds
+    tmod_map: tmod_map.rds
+    tmod_gl: tmod_gl.rds
+    config: config.rds
+    covar: covar.rds
+    rld: rld.rds
+```
+
+Expected object types for each key:
+
+- `annot`: `data.frame` with gene annotation (ideally with `PrimaryID`).
+- `cntr`: named `list` of contrast `data.frame`s.
+- `tmod_res`: named `list` of tmod results per contrast.
+- `tmod_dbs`: named `list` of tmod DB objects (or wrappers with `$dbobj`).
+- `tmod_map`: tmod mapping object (`get_tmod_mapping` output).
+- `tmod_gl`: nested gene-ranking object (same shape as `gl.rds`).
+- `config`: sea-snap style configuration `list`.
+- `covar`: sample covariates `data.frame` (required).
+- `rld`: transformed expression matrix/data.frame (genes x samples).
+- `pca`: PCA matrix/data.frame (samples x PCs, optional).

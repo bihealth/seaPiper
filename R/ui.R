@@ -134,19 +134,41 @@ helpUI <- function() {
 ## prepare the actual tabs UI
 .pipeline_dashboard_body <- function(data, title, features, debug_panel=FALSE) {
 
-  npip <- length(data[[1]])
+  pipelines <- .get_dataset_ids(data)
+  if(length(pipelines) == 0) {
+    pipelines <- "default"
+  }
 
-  pipelines <- names(data[[1]])
-  pipeline_titles <- vapply(data[["config"]], function(cfg) {
-    if(is.null(cfg$dataset_title)) { return(NA_character_) }
-    as.character(cfg$dataset_title)
-  }, character(1))
-  pipeline_titles[is.na(pipeline_titles)] <- pipelines[is.na(pipeline_titles)]
+  pipeline_titles <- pipelines
+  if(is.list(data[["config"]]) && length(data[["config"]]) > 0) {
+    pipeline_titles <- vapply(pipelines, function(ds) {
+      cfg <- data[["config"]][[ds]]
+      if(is.null(cfg) || is.null(cfg$dataset_title)) {
+        return(ds)
+      }
+      as.character(cfg$dataset_title)
+    }, character(1))
+  }
   pipeline_choices <- pipelines
   names(pipeline_choices) <- pipeline_titles
 
   cntr_titles <- data[["cntr_titles"]]
-  covar       <- data[["covar"]]
+  if(is.null(cntr_titles) && is.list(data[["cntr"]]) && length(data[["cntr"]]) > 0) {
+    cntr_titles <- imap(data[["cntr"]], ~ {
+      if(is.null(.x)) {
+        return(character(0))
+      }
+      ids <- names(.x)
+      if(is.null(ids)) {
+        ids <- paste0("contrast_", seq_along(.x))
+      }
+      names(ids) <- ids
+      ids
+    })
+    if(length(cntr_titles) == 1L) {
+      cntr_titles <- cntr_titles[[1]]
+    }
+  }
 
     tabs <- list()
 
@@ -156,10 +178,10 @@ helpUI <- function() {
           box(title=p("Gene table ", icon("question-circle")),
                       width=12, status="primary", 
               collapsible=TRUE,
-              solidHeader=TRUE, geneBrowserTableUI("geneT", cntr_titles)),
+              solidHeader=TRUE, geneBrowserTableUI(id="geneT", cntr_titles=cntr_titles)),
           box(title="Gene info",  width=12, status="primary", 
               collapsible=TRUE,
-              solidHeader=TRUE, geneBrowserPlotUI("geneP", contrasts=TRUE)),
+              solidHeader=TRUE, geneBrowserPlotUI(id="geneP", contrasts=TRUE)),
          useShinyjs()
         )
       ))
@@ -233,4 +255,20 @@ helpUI <- function() {
     tbit,
     style="min-height:2500px;"
   )
+}
+
+## determine dataset IDs from the first available list-like section
+.get_dataset_ids <- function(data) {
+  candidates <- c("covar", "config", "cntr", "annot", "rld", "pca",
+                  "tmod_res", "tmod_dbs", "tmod_map", "tmod_gl", "cntr_titles")
+  for(field in candidates) {
+    value <- data[[field]]
+    if(is.list(value) && length(value) > 0 && !is.null(names(value))) {
+      ids <- names(value)
+      if(length(ids) > 0) {
+        return(ids)
+      }
+    }
+  }
+  character(0)
 }

@@ -13,7 +13,7 @@ License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.1.1
+RoxygenNote: 7.3.2
 Imports: 
   Rseasnap,
   shiny,
@@ -26,6 +26,7 @@ Imports:
   ggplot2,
   thematic,
   tibble,
+  yaml,
   bioshmods (>= 0.0.0.9004)
 URL: https://bihealth.github.io/seaPiper/
 Suggests: 

@@ -23,14 +23,26 @@
                                           })
   if(is.null(tmod_res[[.id]])) {
     message(sprintf(" * Loading tmod results for %s (consider using the tmod_res option to speed this up)", .id))
-    ret[["tmod_res"]] <- get_tmod_res(.pip)
+    ret[["tmod_res"]] <- tryCatch(
+      get_tmod_res(.pip),
+      error=function(e) {
+        message(sprintf(" * tmod results unavailable for %s: %s", .id, conditionMessage(e)))
+        NULL
+      }
+    )
   } else {
     ret[["tmod_res"]] <- tmod_res[[.id]]
   }
 
   if(is.null(tmod_dbs[[.id]])) {
     message(sprintf(" * Loading tmod databases for %s (consider using the tmod_dbs option to speed this up)", .id))
-    ret[["tmod_dbs"]] <- get_tmod_dbs(.pip)
+    ret[["tmod_dbs"]] <- tryCatch(
+      get_tmod_dbs(.pip),
+      error=function(e) {
+        message(sprintf(" * tmod databases unavailable for %s: %s", .id, conditionMessage(e)))
+        NULL
+      }
+    )
   } else {
     ret[["tmod_dbs"]] <- tmod_dbs[[.id]]
   }
@@ -42,15 +54,31 @@
  #}
 
   ## we only want the tmod object
-  ret[["tmod_dbs"]] <- map(ret[["tmod_dbs"]], ~ .x$dbobj)
+  if(!is.null(ret[["tmod_dbs"]])) {
+    ret[["tmod_dbs"]] <- map(ret[["tmod_dbs"]], ~ .x$dbobj)
+  }
 
-  ret[["tmod_map"]] <- get_tmod_mapping(.pip)
-  ret[["tmod_gl"]]  <- get_object(.pip, step="tmod", extension="gl.rds", as_list=TRUE)
+  ret[["tmod_map"]] <- tryCatch(
+    get_tmod_mapping(.pip),
+    error=function(e) {
+      message(sprintf(" * tmod mapping unavailable for %s: %s", .id, conditionMessage(e)))
+      NULL
+    }
+  )
+  ret[["tmod_gl"]]  <- tryCatch(
+    get_object(.pip, step="tmod", extension="gl.rds", as_list=TRUE),
+    error=function(e) {
+      message(sprintf(" * tmod gene lists unavailable for %s: %s", .id, conditionMessage(e)))
+      NULL
+    }
+  )
 
   ## we only need the order of the genes from one tmod db
-  ret[["tmod_gl"]] <- map(ret[["tmod_gl"]], ~  # one for each of contrast
-                             map(.[[1]], ~  # one for each sorting type
-                                 match(names(.), ret[["annot"]][[primary_id]])))
+  if(!is.null(ret[["tmod_gl"]]) && !is.null(ret[["annot"]]) && primary_id %in% colnames(ret[["annot"]])) {
+    ret[["tmod_gl"]] <- map(ret[["tmod_gl"]], ~  # one for each of contrast
+                               map(.[[1]], ~  # one for each sorting type
+                                   match(names(.), ret[["annot"]][[primary_id]])))
+  }
 
   ret[["config"]]   <- get_config(.pip)
   ret[["covar"]]    <- get_covariates(.pip)
@@ -59,10 +87,19 @@
     ret[["config"]][["dataset_title"]] <- .id
   }
 
-  ret[["annot_linkout"]] <- .prep_annot_linkout(ret[["annot"]], ret[["config"]])
+  if(!is.null(ret[["annot"]])) {
+    ret[["annot_linkout"]] <- .prep_annot_linkout(ret[["annot"]], ret[["config"]])
+  } else {
+    ret[["annot_linkout"]] <- NULL
+  }
 
-  ret[["dbs"]]     <- names(ret[["tmod_dbs"]])
-  ret[["sorting"]] <- ret[["config"]]$tmod$sort_by
+  if(!is.null(ret[["tmod_dbs"]])) {
+    ret[["dbs"]]     <- names(ret[["tmod_dbs"]])
+    ret[["sorting"]] <- ret[["config"]]$tmod$sort_by
+  } else {
+    ret[["dbs"]]     <- NULL
+    ret[["sorting"]] <- NULL
+  }
 
   ret[["rld"]]     <- get_object(.pip, step="DESeq2", extension="rld.blind.rds")
   ret[["rld"]]     <- assay(ret[["rld"]])
@@ -73,9 +110,13 @@
   sel  <- vars > 1e-26
   ret[["pca"]] <- prcomp(mtx[ , sel], scale.=TRUE)$x
   
-  ret[["cntr_titles"]]        <- map_chr(ret[["config"]]$contrasts$contrast_list, `[[`, "ID")
-  names(ret[["cntr_titles"]]) <- map_chr(ret[["config"]]$contrasts$contrast_list, `[[`, "title")
-  ret[["cntr_titles"]]        <- ret[["cntr_titles"]][ ret[["cntr_titles"]] %in% names(ret[["cntr"]]) ]
+  if(!is.null(ret[["cntr"]]) && !is.null(ret[["config"]]$contrasts$contrast_list)) {
+    ret[["cntr_titles"]]        <- map_chr(ret[["config"]]$contrasts$contrast_list, `[[`, "ID")
+    names(ret[["cntr_titles"]]) <- map_chr(ret[["config"]]$contrasts$contrast_list, `[[`, "title")
+    ret[["cntr_titles"]]        <- ret[["cntr_titles"]][ ret[["cntr_titles"]] %in% names(ret[["cntr"]]) ]
+  } else {
+    ret[["cntr_titles"]] <- NULL
+  }
 
   ret
 }

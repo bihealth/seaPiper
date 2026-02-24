@@ -9,6 +9,7 @@ validate_seapiperdata <- function(data) {
     cntr      = has_list_data(data[["cntr"]]),
     annot     = has_list_data(data[["annot"]]),
     covar     = has_list_data(data[["covar"]]),
+    rld       = has_list_data(data[["rld"]]),
     pca       = has_list_data(data[["pca"]]),
     config    = has_list_data(data[["config"]]),
     tmod_res  = has_list_data(data[["tmod_res"]]),
@@ -18,7 +19,7 @@ validate_seapiperdata <- function(data) {
   )
 
   features <- list(
-    gene_browser = present$cntr && present$annot,
+    gene_browser = present$cntr && present$annot && present$covar && present$rld,
     volcano      = present$cntr,
     disco        = present$cntr && present$annot,
     pca          = present$pca && present$covar,
@@ -28,7 +29,7 @@ validate_seapiperdata <- function(data) {
   )
 
   missing <- list(
-    gene_browser = c("cntr", "annot")[!c(present$cntr, present$annot)],
+    gene_browser = c("cntr", "annot", "covar", "rld")[!c(present$cntr, present$annot, present$covar, present$rld)],
     volcano      = c("cntr")[!present$cntr],
     disco        = c("cntr", "annot")[!c(present$cntr, present$annot)],
     pca          = c("pca", "covar")[!c(present$pca, present$covar)],
