@@ -81,16 +81,16 @@ helpUI <- function() {
                 "Browse genes and view gene expression", placement="right")))
   }
 
-  if(isTRUE(features$tmod)) {
-    menus <- c(menus, list(
-         tipify(menuItem("Tmod browser",  tabName = "tmod_browser", icon = icon("project-diagram")),
-                "Browse gene set enrichments", placement="right")))
-  }
-
   if(isTRUE(features$disco)) {
     menus <- c(menus, list(
          tipify(menuItem("Disco plots",   tabName = "disco", icon = icon("chart-line")),
                 "Compare contrasts", placement="right")))
+  }
+
+  if(isTRUE(features$tmod)) {
+    menus <- c(menus, list(
+         tipify(menuItem("Tmod browser",  tabName = "tmod_browser", icon = icon("project-diagram")),
+                "Browse gene set enrichments", placement="right")))
   }
 
   if(isTRUE(features$tmod_panel)) {
@@ -198,6 +198,15 @@ helpUI <- function() {
       ))
     }
 
+    if(isTRUE(features$disco)) {
+      tabs <- c(tabs, list(
+        tabItem("disco",
+          box(title="Discordance / concordance plots", width=12, status="primary",
+          height="800px", solidHeader=TRUE, discoUI("disco", cntr_titles))
+        )
+      ))
+    }
+
     if(isTRUE(features$tmod)) {
       tabs <- c(tabs, list(
         tabItem("tmod_browser",
@@ -207,15 +216,6 @@ helpUI <- function() {
           box(title="Evidence plot", width=12, status="primary",
               collapsible=TRUE,
               solidHeader=TRUE, tmodBrowserPlotUI("tmodP"))
-        )
-      ))
-    }
-
-    if(isTRUE(features$disco)) {
-      tabs <- c(tabs, list(
-        tabItem("disco",
-          box(title="Discordance / concordance plots", width=12, status="primary",
-          height="800px", solidHeader=TRUE, discoUI("disco", cntr_titles))
         )
       ))
     }
