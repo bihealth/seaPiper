@@ -36,6 +36,7 @@
 #' @importFrom bioshmods tmodBrowserTableServer tmodPanelPlotServer pcaServer volcanoServer geneBrowserPlotServer
 #' @importFrom bioshmods geneBrowserTableUI geneBrowserPlotUI volcanoUI tmodBrowserTableUI
 #' @importFrom bioshmods tmodBrowserPlotUI discoUI tmodPanelPlotUI pcaUI
+#' @importFrom bioshmods fileExportServer fileExportUI
 #' @importFrom utils sessionInfo object.size
 #' @examples
 #' if(interactive()) {
@@ -82,6 +83,8 @@ seapiper <- function(data, title="Workflow output explorer",
   ## Prepare the UI
   validation <- validate_seapiperdata(data)
   features <- validation$features
+  export_objects <- .build_export_objects(data)
+  features$file_export <- length(export_objects) > 0L
 
   if(length(validation$missing) > 0) {
     details <- vapply(names(validation$missing), function(name) {
@@ -91,7 +94,8 @@ seapiper <- function(data, title="Workflow output explorer",
   }
   header  <- .pipeline_dashboard_header(title)     
   sidebar <- .pipeline_dashboard_sidebar(features=features, debug_panel=debug_panel)
-  body    <- .pipeline_dashboard_body(data, title, features=features, debug_panel=debug_panel)
+  body    <- .pipeline_dashboard_body(data, title, features=features, export_objects=export_objects,
+                                      debug_panel=debug_panel)
   ui <- dashboardPage(header, sidebar, body, skin="green", title=title)
 
   #   theme = bs_theme(primary = "#06402B", secondary = "#8FB9AA", 
@@ -126,6 +130,10 @@ seapiper <- function(data, title="Workflow output explorer",
                           enable_disco=isTRUE(features$disco),
                           enable_volcano=isTRUE(features$volcano),
                           enable_pca=isTRUE(features$pca))
+
+    if(isTRUE(features$file_export)) {
+      .seapiper_server_export(input, output, session, export_objects)
+    }
 
     if(debug_panel) {
       output$debugTab <- renderTable({

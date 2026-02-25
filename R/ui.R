@@ -105,6 +105,12 @@ helpUI <- function() {
                 "Principal component analysis", placement="right")))
   }
 
+  if(isTRUE(features$file_export)) {
+    menus <- c(menus, list(
+         tipify(menuItem("Export data",   tabName = "file_export", icon = icon("download")),
+                "Export displayed data objects", placement="right")))
+  }
+
   if(isTRUE(features$info)) {
     menus <- c(menus, list(
          tipify(menuItem("Workflow Info", tabName = "pip_info", icon = icon("info-circle")),
@@ -133,7 +139,7 @@ helpUI <- function() {
 
 
 ## prepare the actual tabs UI
-.pipeline_dashboard_body <- function(data, title, features, debug_panel=FALSE) {
+.pipeline_dashboard_body <- function(data, title, features, export_objects=NULL, debug_panel=FALSE) {
 
   pipelines <- .get_dataset_ids(data)
   if(length(pipelines) == 0) {
@@ -234,6 +240,15 @@ helpUI <- function() {
           box(title="Principal Component Analysis", width=12, status="primary",
           solidHeader=TRUE, pcaUI("pca", pipeline_choices)),
           useShinyjs()
+        )
+      ))
+    }
+
+    if(isTRUE(features$file_export) && !is.null(export_objects) && length(export_objects) > 0L) {
+      tabs <- c(tabs, list(
+        tabItem("file_export",
+          box(title="Export data", width=12, status="primary",
+          solidHeader=TRUE, fileExportUI("fexp", export_objects))
         )
       ))
     }
