@@ -1,0 +1,23 @@
+# All relative paths are resolved against this YAML file location.
+datasets:
+  default:
+    # data.frame: gene annotation; should include PrimaryID column (or row names)
+    annot: annot.rds
+    # named list of data.frames: differential expression tables per contrast
+    cntr: cntr.rds
+    # named list: tmod enrichment results per contrast
+    tmod_res: tmod_res.rds
+    # named list: tmod databases (db objects or wrappers containing $dbobj)
+    tmod_dbs: tmod_dbs.rds
+    # mapping object from Rseasnap::get_tmod_mapping
+    tmod_map: tmod_map.rds
+    # nested tmod gene-ranking structure (gl.rds-like)
+    tmod_gl: tmod_gl.rds
+    # config list (sea-snap style)
+    config: config.rds
+    # REQUIRED: data.frame of sample covariates (typically with ID column)
+    covar: covar.rds
+    # matrix/data.frame of transformed expression values (genes x samples)
+    rld: rld.rds
+    # optional PCA matrix/data.frame (samples x PCs); computed from rld if absent
+    pca: pca.rds
