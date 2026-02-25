@@ -101,3 +101,46 @@ a { color: #06402B }
       border-left-color:#666666;
       border-right-color:#666666;
       border-top-color:#666666;
+}
+
+/* Harmonize selectize controls with seaPiper primary color. */
+.selectize-control .selectize-input.focus {
+  border-color:#06402B !important;
+  box-shadow:inset 0 1px 1px rgba(0,0,0,0.075), 0 0 6px rgba(6,64,43,0.35) !important;
+}
+
+.selectize-dropdown .active,
+.selectize-dropdown .selected,
+.selectize-control.multi .selectize-input > div.active {
+  background-color:#06402B !important;
+  color:#fff !important;
+}
+
+/* Use native checkbox/radio accent coloring in modern browsers. */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color:#06402B;
+}
+
+/* Style Disco sliderInput controls with seaPiper primary color. */
+#shiny-tab-disco .irs--shiny .irs-bar {
+  border-top: 1px solid #06402B;
+  border-bottom: 1px solid #06402B;
+  background: #06402B;
+}
+
+#shiny-tab-disco .irs--shiny .irs-from,
+#shiny-tab-disco .irs--shiny .irs-to,
+#shiny-tab-disco .irs--shiny .irs-single {
+  background-color:#06402B;
+}
+
+#shiny-tab-disco .irs--shiny .irs-handle {
+  border:1px solid #06402B;
+  background-color:#ffffff;
+}
+
+#shiny-tab-disco .irs--shiny .irs-handle.state_hover,
+#shiny-tab-disco .irs--shiny .irs-handle:hover {
+  background-color:#E8F2EE;
+}
