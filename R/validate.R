@@ -21,6 +21,7 @@ validate_seapiperdata <- function(data) {
   features <- list(
     gene_browser = present$cntr && present$annot && present$covar && present$rld,
     volcano      = present$cntr,
+    heatmap      = present$annot && present$rld,
     disco        = present$cntr && present$annot,
     pca          = present$pca && present$covar,
     info         = present$config && present$covar,
@@ -31,6 +32,7 @@ validate_seapiperdata <- function(data) {
   missing <- list(
     gene_browser = c("cntr", "annot", "covar", "rld")[!c(present$cntr, present$annot, present$covar, present$rld)],
     volcano      = c("cntr")[!present$cntr],
+    heatmap      = c("annot", "rld")[!c(present$annot, present$rld)],
     disco        = c("cntr", "annot")[!c(present$cntr, present$annot)],
     pca          = c("pca", "covar")[!c(present$pca, present$covar)],
     info         = c("config", "covar")[!c(present$config, present$covar)],

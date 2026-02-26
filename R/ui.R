@@ -81,6 +81,12 @@ helpUI <- function() {
                 "Browse genes and view gene expression", placement="right")))
   }
 
+  if(isTRUE(features$heatmap)) {
+    menus <- c(menus, list(
+         tipify(menuItem("Heatmap", tabName = "heatmap", icon = icon("th")),
+                "View expression heatmaps for selected genes", placement="right")))
+  }
+
   if(isTRUE(features$disco)) {
     menus <- c(menus, list(
          tipify(menuItem("Disco plots",   tabName = "disco", icon = icon("chart-line")),
@@ -200,6 +206,16 @@ helpUI <- function() {
           box(title="Volcano plots", width=12, status="primary", 
               collapsible=TRUE,
               solidHeader=TRUE, volcanoUI("volcano", pipeline_choices))
+        )
+      ))
+    }
+
+    if(isTRUE(features$heatmap)) {
+      tabs <- c(tabs, list(
+        tabItem("heatmap",
+          box(title="Expression heatmap", width=12, status="primary",
+              collapsible=TRUE,
+              solidHeader=TRUE, bioshmods::heatmapUI("heatmap"))
         )
       ))
     }

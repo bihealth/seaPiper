@@ -134,6 +134,7 @@ make_feature_flags <- function(value=FALSE) {
   list(
     info=value,
     gene_browser=value,
+    heatmap=value,
     tmod=value,
     tmod_panel=value,
     disco=value,

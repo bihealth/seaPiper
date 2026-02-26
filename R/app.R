@@ -83,6 +83,15 @@ seapiper <- function(data, title="Workflow output explorer",
   ## Prepare the UI
   validation <- validate_seapiperdata(data)
   features <- validation$features
+  heatmap_available <- tryCatch({
+    ns <- asNamespace("bioshmods")
+    exists("heatmapUI", where=ns, inherits=FALSE) &&
+      exists("heatmapServer", where=ns, inherits=FALSE)
+  }, error=function(e) FALSE)
+  if(isTRUE(features$heatmap) && !isTRUE(heatmap_available)) {
+    features$heatmap <- FALSE
+    validation$missing$heatmap <- c("bioshmods::heatmapUI", "bioshmods::heatmapServer")
+  }
   export_objects <- .build_export_objects(data)
   features$file_export <- length(export_objects) > 0L
 
@@ -129,6 +138,7 @@ seapiper <- function(data, title="Workflow output explorer",
     .seapiper_server_misc(input, output, session, data, gene_id,
                           enable_disco=isTRUE(features$disco),
                           enable_volcano=isTRUE(features$volcano),
+                          enable_heatmap=isTRUE(features$heatmap),
                           enable_pca=isTRUE(features$pca))
 
     if(isTRUE(features$file_export)) {
