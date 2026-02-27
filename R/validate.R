@@ -19,6 +19,7 @@ validate_seapiperdata <- function(data) {
   )
 
   features <- list(
+    covar        = present$covar,
     gene_browser = present$cntr && present$annot && present$covar && present$rld,
     volcano      = present$cntr,
     heatmap      = present$annot && present$rld,

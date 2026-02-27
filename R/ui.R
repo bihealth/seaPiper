@@ -111,6 +111,12 @@ helpUI <- function() {
                 "Principal component analysis", placement="right")))
   }
 
+  if(isTRUE(features$covar)) {
+    menus <- c(menus, list(
+         tipify(menuItem("Color palettes", tabName = "color_palettes", icon = icon("palette")),
+                "Configure color palettes", placement="right")))
+  }
+
   if(isTRUE(features$file_export)) {
     menus <- c(menus, list(
          tipify(menuItem("Export data",   tabName = "file_export", icon = icon("download")),
@@ -256,6 +262,15 @@ helpUI <- function() {
           box(title="Principal Component Analysis", width=12, status="primary",
           solidHeader=TRUE, pcaUI("pca", pipeline_choices)),
           useShinyjs()
+        )
+      ))
+    }
+
+    if(isTRUE(features$covar)) {
+      tabs <- c(tabs, list(
+        tabItem("color_palettes",
+          box(title="Color palettes", width=12, status="primary",
+              solidHeader=TRUE, bioshmods::colorPalettesUI("color_palettes"))
         )
       ))
     }

@@ -22,7 +22,7 @@
 #' @importFrom shiny isTruthy shinyApp
 #' @importFrom shiny tableOutput renderTable renderPrint verbatimTextOutput
 #' @importFrom shiny selectInput 
-#' @importFrom shiny observeEvent reactiveValues
+#' @importFrom shiny observeEvent reactiveVal reactiveValues
 #' @importFrom shiny column fluidPage fluidRow h1 h2 h3 h4 p tagList
 #' @importFrom shinyjs useShinyjs hidden
 #' @importFrom purrr imap map map_chr transpose
@@ -83,15 +83,8 @@ seapiper <- function(data, title="Workflow output explorer",
   ## Prepare the UI
   validation <- validate_seapiperdata(data)
   features <- validation$features
-  heatmap_available <- tryCatch({
-    ns <- asNamespace("bioshmods")
-    exists("heatmapUI", where=ns, inherits=FALSE) &&
-      exists("heatmapServer", where=ns, inherits=FALSE)
-  }, error=function(e) FALSE)
-  if(isTRUE(features$heatmap) && !isTRUE(heatmap_available)) {
-    features$heatmap <- FALSE
-    validation$missing$heatmap <- c("bioshmods::heatmapUI", "bioshmods::heatmapServer")
-  }
+  inferred_palette_variables <- lapply(data[["covar"]], bioshmods::infer_palette_variables, cleanup=TRUE)
+
   export_objects <- .build_export_objects(data)
   features$file_export <- length(export_objects) > 0L
 
@@ -121,6 +114,7 @@ seapiper <- function(data, title="Workflow output explorer",
 
     ## this is reactive value for gene sets
     gs_id   <- reactiveValues()
+    palettes <- reactiveVal(NULL)
 
     if(isTRUE(features$info)) {
       .seapiper_server_info(input, output, session, data, title)
@@ -139,7 +133,17 @@ seapiper <- function(data, title="Workflow output explorer",
                           enable_disco=isTRUE(features$disco),
                           enable_volcano=isTRUE(features$volcano),
                           enable_heatmap=isTRUE(features$heatmap),
-                          enable_pca=isTRUE(features$pca))
+                          enable_pca=isTRUE(features$pca),
+                          palettes=palettes)
+
+    if(isTRUE(features$covar)) {
+      selected_palette_variables <- reactiveVal(inferred_palette_variables[[1]])
+      bioshmods::colorPalettesServer(
+        "color_palettes",
+        variables=selected_palette_variables,
+        palettes=palettes
+      )
+    }
 
     if(isTRUE(features$file_export)) {
       .seapiper_server_export(input, output, session, export_objects)
