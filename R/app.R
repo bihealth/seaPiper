@@ -137,10 +137,9 @@ seapiper <- function(data, title="Workflow output explorer",
                           palettes=palettes)
 
     if(isTRUE(features$covar)) {
-      selected_palette_variables <- reactiveVal(inferred_palette_variables[[1]])
       bioshmods::colorPalettesServer(
         "color_palettes",
-        variables=selected_palette_variables,
+        variables=inferred_palette_variables,
         palettes=palettes
       )
     }
