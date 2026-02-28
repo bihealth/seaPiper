@@ -121,7 +121,7 @@ seapiper <- function(data, title="Workflow output explorer",
     }
 
     if(isTRUE(features$gene_browser)) {
-      .seapiper_server_gene(input, output, session, data, gene_id)
+      .seapiper_server_gene(input, output, session, data, gene_id, palettes)
     }
 
     if(isTRUE(features$tmod)) {

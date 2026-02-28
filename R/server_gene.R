@@ -1,5 +1,5 @@
 ## server logic for gene browser modules
-.seapiper_server_gene <- function(input, output, session, data, gene_id) {
+.seapiper_server_gene <- function(input, output, session, data, gene_id, palettes) {
   geneBrowserTableServer(id="geneT",
     cntr=data[["cntr"]],
     annot=data[["annot"]],
@@ -16,6 +16,7 @@
                         exprs=data[["rld"]], annot=data[["annot"]], 
                         annot_linkout=data[["annot_linkout"]],
                         cntr=data[["cntr"]],
-                        exprs_label = "Regularized log transformed expression (rlog)"
+                        exprs_label = "Regularized log transformed expression (rlog)",
+                        palettes=palettes
   )
 }
