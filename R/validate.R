@@ -1,21 +1,16 @@
 ## validate a seaPiperData object and report missing inputs
 validate_seapiperdata <- function(data) {
-  has_list_data <- function(x) {
-    is.list(x) && length(x) > 0 &&
-      any(vapply(x, function(.x) !is.null(.x) && length(.x) > 0, logical(1)))
-  }
-
   present <- list(
-    cntr      = has_list_data(data[["cntr"]]),
-    annot     = has_list_data(data[["annot"]]),
-    covar     = has_list_data(data[["covar"]]),
-    rld       = has_list_data(data[["rld"]]),
-    pca       = has_list_data(data[["pca"]]),
-    config    = has_list_data(data[["config"]]),
-    tmod_res  = has_list_data(data[["tmod_res"]]),
-    tmod_dbs  = has_list_data(data[["tmod_dbs"]]),
-    tmod_map  = has_list_data(data[["tmod_map"]]),
-    tmod_gl   = has_list_data(data[["tmod_gl"]])
+    cntr      = .has_list_data(data[["cntr"]]),
+    annot     = .has_list_data(data[["annot"]]),
+    covar     = .has_list_data(data[["covar"]], strict=TRUE),
+    rld       = .has_list_data(data[["rld"]]),
+    pca       = .has_list_data(data[["pca"]]),
+    config    = .has_list_data(data[["config"]]),
+    tmod_res  = .has_list_data(data[["tmod_res"]]),
+    tmod_dbs  = .has_list_data(data[["tmod_dbs"]]),
+    tmod_map  = .has_list_data(data[["tmod_map"]]),
+    tmod_gl   = .has_list_data(data[["tmod_gl"]])
   )
 
   features <- list(
