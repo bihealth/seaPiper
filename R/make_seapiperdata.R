@@ -144,7 +144,7 @@ seapiperdata_from_objects <- function(cntr, annot, exprs,
 #' @importFrom Rseasnap get_covariates get_object get_annot get_contrasts 
 #' @export
 seapiperdata_from_rseasnap <- function(pip, primary_id="PrimaryID",
-                                       sample_id="SampleID",
+                                       sample_id="label",
                                        annot=NULL, cntr=NULL, tmod_res=NULL, tmod_dbs=NULL) {
 
   ## pip can be a pipeline or a list of pipelines. In this first case, we
