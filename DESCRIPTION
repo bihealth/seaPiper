@@ -1,6 +1,6 @@
 Package: seaPiper
 Title: Workflow output explorer for the sea-snap pipeline
-Version: 0.1.4
+Version: 0.1.4.9002
 Authors@R: 
     person(given = "January",
            family = "Weiner",
@@ -27,7 +27,7 @@ Imports:
   thematic,
   tibble,
   yaml,
-  bioshmods (>= 0.0.0.9004)
+  bioshmods (>= 0.1.2)
 URL: https://bihealth.github.io/seaPiper/
 Suggests: 
     knitr,

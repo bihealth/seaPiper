@@ -227,33 +227,50 @@ seapiperdata_from_yaml <- function(yaml_file, primary_id="PrimaryID") {
 #' Merge two seaPiperData objects
 #'
 #' Combine two `seaPiperData` objects into one. Dataset IDs from both inputs are
-#' preserved. If the same dataset ID appears in both objects, IDs are renamed
-#' using `suffixes` (similarly to `merge()`), e.g. `default.x` and `default.y`.
+#' preserved. If the same dataset ID appears in both objects, provide
+#' `dataset_names` (or rename inputs via [`name<-`]) to disambiguate them.
 #'
 #' @param x first `seaPiperData` object
 #' @param y second `seaPiperData` object
-#' @param suffixes character vector of length 2 used when a dataset ID appears
-#'   in both objects.
+#' @param dataset_names optional character vector of length 2, used to rename
+#'   the dataset IDs of `x` and `y` before merging. Intended for merging two
+#'   single-dataset objects.
 #' @return A merged object of class `seaPiperData`.
 #' @export
-merge_seapiperdata <- function(x, y, suffixes=c(".x", ".y")) {
+merge_seapiperdata <- function(x, y, dataset_names=NULL) {
   .assert_seapiperdata(x, "x")
   .assert_seapiperdata(y, "y")
 
-  if(!is.character(suffixes) || length(suffixes) != 2 || anyNA(suffixes)) {
-    stop("`suffixes` must be a character vector of length 2")
+  if(!is.null(dataset_names)) {
+    if(!is.character(dataset_names) || length(dataset_names) != 2 || anyNA(dataset_names) ||
+       any(!nzchar(dataset_names))) {
+      stop("`dataset_names` must be a character vector of length 2 with non-empty values")
+    }
+    x <- `name<-`(x, dataset_names[[1]])
+    y <- `name<-`(y, dataset_names[[2]])
   }
 
   ids_x <- .dataset_ids_from_seapiperdata(x)
   ids_y <- .dataset_ids_from_seapiperdata(y)
-  renaming <- .dataset_renaming(ids_x, ids_y, suffixes)
+
+  overlap <- intersect(ids_x, ids_y)
+  if(length(overlap) > 0L) {
+    stop(
+      sprintf(
+        paste(
+          "Duplicate dataset IDs between `x` and `y`: %s.",
+          "Rename datasets first using `name(x) <- ...`, or pass `dataset_names`."
+        ),
+        paste(overlap, collapse=", ")
+      )
+    )
+  }
+
   fields <- .merge_field_names(x, y)
 
   merged <- map(fields, ~ {
     x_values <- .normalize_field_values(x[[.x]], ids_x, .x)
     y_values <- .normalize_field_values(y[[.x]], ids_y, .x)
-    x_values <- .rename_field_values(x_values, renaming$map_x)
-    y_values <- .rename_field_values(y_values, renaming$map_y)
     combined <- c(x_values, y_values)
     if(length(combined) > 0 && all(vapply(combined, is.null, logical(1)))) {
       NULL
@@ -264,6 +281,59 @@ merge_seapiperdata <- function(x, y, suffixes=c(".x", ".y")) {
   names(merged) <- fields
 
   .as_seapiperdata(merged)
+}
+
+#' Rename dataset IDs in a seaPiperData object
+#'
+#' Use assignment syntax (`name(x) <- value`) to rename dataset IDs across all
+#' top-level fields of a `seaPiperData` object.
+#'
+#' @param x a `seaPiperData` object.
+#' @param value new dataset IDs. Use a single string for single-dataset objects,
+#'   or a character vector with one value per dataset for multi-dataset objects.
+#' @return The renamed `seaPiperData` object.
+#' @export
+`name<-` <- function(x, value) {
+  .assert_seapiperdata(x, "x")
+
+  ids <- .dataset_ids_from_seapiperdata(x)
+  if(length(ids) < 1L) {
+    stop("Cannot rename datasets: no dataset IDs found in object")
+  }
+
+  if(!is.character(value) || anyNA(value) || any(!nzchar(value))) {
+    stop("`value` must be a non-empty character vector")
+  }
+
+  if(length(value) == 1L && length(ids) == 1L) {
+    value <- as.character(value)
+  } else if(length(value) != length(ids)) {
+    stop(sprintf(
+      "`value` must have length 1 (single-dataset object) or %d",
+      length(ids)
+    ))
+  }
+
+  if(anyDuplicated(value)) {
+    stop("`value` must contain unique dataset IDs")
+  }
+
+  id_map <- stats::setNames(as.character(value), ids)
+
+  for(field in names(x)) {
+    values <- x[[field]]
+    if(!is.list(values) || length(values) == 0L || is.null(names(values))) {
+      next
+    }
+
+    field_names <- names(values)
+    hit <- field_names %in% ids
+    field_names[hit] <- unname(id_map[field_names[hit]])
+    names(values) <- field_names
+    x[[field]] <- values
+  }
+
+  x
 }
 
 #' Build seaPiperData from basic inputs
@@ -331,37 +401,6 @@ custom_yaml_to_seapiperdata <- function(...) {
   unique(c(schema_fields, names(x), names(y)))
 }
 
-# Build dataset-ID renaming maps for two objects using suffixes for overlaps.
-# Returns a list with `map_x` and `map_y` named character vectors.
-.dataset_renaming <- function(ids_x, ids_y, suffixes) {
-  overlap <- intersect(ids_x, ids_y)
-
-  map_x <- setNames(ids_x, ids_x)
-  map_y <- setNames(ids_y, ids_y)
-
-  map_x[overlap] <- paste0(overlap, suffixes[[1]])
-  map_y[overlap] <- paste0(overlap, suffixes[[2]])
-
-  .assert_unique_target_ids(unname(map_x), "x")
-  .assert_unique_target_ids(unname(map_y), "y")
-  .assert_unique_target_ids(c(unname(map_x), unname(map_y)), "merged result")
-
-  list(map_x=map_x, map_y=map_y)
-}
-
-# Validate that renamed dataset IDs are unique.
-# Returns NULL; used for side effects (errors).
-.assert_unique_target_ids <- function(ids, label) {
-  dup <- unique(ids[duplicated(ids)])
-  if(length(dup) > 0) {
-    stop(sprintf(
-      "Duplicate dataset IDs in %s after renaming: %s",
-      label,
-      paste(dup, collapse=", ")
-    ))
-  }
-}
-
 # Normalize one top-level field to a named list indexed by dataset IDs.
 # Returns a list of length `length(dataset_ids)` with names `dataset_ids`.
 .normalize_field_values <- function(values, dataset_ids, field_name) {
@@ -381,17 +420,6 @@ custom_yaml_to_seapiperdata <- function(...) {
   ret[names(values)[keep]] <- values[keep]
   ret
 }
-
-# Rename one normalized field list according to a dataset-ID map.
-# Returns a named list with updated dataset IDs.
-.rename_field_values <- function(values, id_map) {
-  if(length(values) == 0) {
-    return(values)
-  }
-  names(values) <- unname(id_map[names(values)])
-  values
-}
-
 # Load and normalize one dataset section from the YAML spec.
 # Returns a single normalized dataset list matching the seaPiperData schema.
 .load_custom_yaml_dataset <- function(dataset_spec, dataset_name, base_dir, primary_id) {
