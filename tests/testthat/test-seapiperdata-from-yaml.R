@@ -33,6 +33,7 @@ test_that("seapiperdata_from_yaml loads relative RDS paths and computes pca", {
   expect_s3_class(spd, "seaPiperData")
   expect_true(is.matrix(spd$pca$default))
   expect_equal(spd$config$default$dataset_title, "YAML dataset")
+  expect_equal(spd$sample_id$default, "SampleID")
 })
 
 test_that("seapiperdata_from_yaml validates YAML structure and required keys", {
@@ -89,4 +90,37 @@ test_that("seapiperdata_from_yaml errors when referenced file is missing", {
     seapiperdata_from_yaml(yaml_file),
     "file for `covar` not found"
   )
+})
+
+test_that("seapiperdata_from_yaml supports custom sample_id", {
+  tmp_dir <- tempfile("sp_yaml_")
+  dir.create(tmp_dir)
+  on.exit(unlink(tmp_dir, recursive=TRUE), add=TRUE)
+
+  covar <- make_fixture_covar()
+  covar$sid <- covar$SampleID
+  covar$SampleID <- NULL
+  rownames(covar) <- covar$sid
+
+  saveRDS(make_fixture_annot(), file.path(tmp_dir, "annot.rds"))
+  saveRDS(make_fixture_cntr(), file.path(tmp_dir, "cntr.rds"))
+  saveRDS(covar, file.path(tmp_dir, "covar.rds"))
+  saveRDS(make_fixture_exprs(), file.path(tmp_dir, "rld.rds"))
+
+  yaml_file <- write_yaml_fixture(
+    c(
+      "datasets:",
+      "  default:",
+      "    sample_id: sid",
+      "    annot: annot.rds",
+      "    cntr: cntr.rds",
+      "    covar: covar.rds",
+      "    rld: rld.rds"
+    ),
+    file.path(tmp_dir, "custom_sample_id.yaml")
+  )
+
+  spd <- seapiperdata_from_yaml(yaml_file)
+  expect_equal(spd$sample_id$default, "sid")
+  expect_equal(rownames(spd$covar$default), covar$sid)
 })

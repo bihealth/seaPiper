@@ -1,5 +1,6 @@
 ## prepares the data structure for a single pipeline
-.prepare_data_single_pipeline <- function(.id, .pip, primary_id, annot, cntr, tmod_res, tmod_dbs,
+.prepare_data_single_pipeline <- function(.id, .pip, primary_id, sample_id,
+                                          annot, cntr, tmod_res, tmod_dbs,
                                           contrast_cols=c(primary_id, "log2FoldChange", "pvalue", "padj")) {
   ret <- list()
 
@@ -81,7 +82,12 @@
   }
 
   ret[["config"]]   <- get_config(.pip)
-  ret[["covar"]]    <- get_covariates(.pip)
+  ret[["covar"]]    <- .normalize_covar_sample_ids(
+    covar=get_covariates(.pip),
+    sample_id=sample_id,
+    context=sprintf("dataset `%s`", .id)
+  )
+  ret[["sample_id"]] <- sample_id
 
   if(is.null(ret[["config"]][["dataset_title"]])) {
     ret[["config"]][["dataset_title"]] <- .id

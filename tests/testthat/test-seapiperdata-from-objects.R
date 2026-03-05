@@ -13,6 +13,7 @@ test_that("seapiperdata_from_objects builds expected seaPiperData shape", {
   expect_equal(spd$config$default$dataset_title, "default")
   expect_true(is.matrix(spd$rld$default))
   expect_true(is.matrix(spd$pca$default))
+  expect_equal(spd$sample_id$default, "SampleID")
 })
 
 test_that("seapiperdata_from_objects infers primary IDs when missing", {
@@ -62,5 +63,44 @@ test_that("seapiperdata_from_objects validates expression matrix names", {
       exprs=exprs
     ),
     "must have row names"
+  )
+})
+
+test_that("seapiperdata_from_objects honors custom sample_id and validates covariates", {
+  covar <- make_fixture_covar()
+  covar$sample_label <- covar$SampleID
+  covar$SampleID <- NULL
+  rownames(covar) <- covar$sample_label
+
+  spd <- seapiperdata_from_objects(
+    cntr=make_fixture_cntr(),
+    annot=make_fixture_annot(),
+    exprs=make_fixture_exprs(),
+    covar=covar,
+    sample_id="sample_label"
+  )
+
+  expect_equal(spd$sample_id$default, "sample_label")
+  expect_equal(rownames(spd$covar$default), covar$sample_label)
+
+  expect_no_error(
+    seapiperdata_from_objects(
+      cntr=make_fixture_cntr(),
+      annot=make_fixture_annot(),
+      exprs=make_fixture_exprs(),
+      covar=make_fixture_covar()
+    )
+  )
+
+  bad_covar <- make_fixture_covar()
+  bad_covar$SampleID <- NULL
+  expect_error(
+    seapiperdata_from_objects(
+      cntr=make_fixture_cntr(),
+      annot=make_fixture_annot(),
+      exprs=make_fixture_exprs(),
+      covar=bad_covar
+    ),
+    "must contain sample ID column"
   )
 })

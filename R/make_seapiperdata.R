@@ -15,12 +15,15 @@
 #' @param exprs expression matrix (genes x samples)
 #' @param primary_id primary gene identifier column name
 #' @param covar optional covariate data frame (samples x variables)
+#' @param sample_id sample identifier column in `covar` used to link
+#'   covariates to expression data (default: `"SampleID"`).
 #' @param config optional configuration list; if NULL, defaults are created
 #' @param title optional dataset title stored in `config$dataset_title`
 #' @export
 seapiperdata_from_objects <- function(cntr, annot, exprs,
                                       primary_id="PrimaryID",
                                       covar=NULL,
+                                      sample_id="SampleID",
                                       config=NULL,
                                       title=NULL) {
   stopifnot(is.list(cntr))
@@ -63,10 +66,17 @@ seapiperdata_from_objects <- function(cntr, annot, exprs,
     .x
   })
 
+  sample_id <- .normalize_sample_id_value(sample_id, "seapiperdata_from_objects")
+
   if(is.null(covar)) {
-    covar <- data.frame(ID=colnames(exprs), stringsAsFactors=FALSE)
-    rownames(covar) <- covar[["ID"]]
+    covar <- setNames(
+      data.frame(colnames(exprs), stringsAsFactors=FALSE),
+      sample_id
+    )
+  } else {
+    covar <- as.data.frame(covar)
   }
+  covar <- .normalize_covar_sample_ids(covar, sample_id, "seapiperdata_from_objects")
 
   if(is.null(config)) {
     config <- list(
@@ -103,6 +113,7 @@ seapiperdata_from_objects <- function(cntr, annot, exprs,
     tmod_gl  = NULL,
     config   = list(default=config),
     covar    = list(default=covar),
+    sample_id = list(default=sample_id),
     annot_linkout = list(default=.prep_annot_linkout(annot, config)),
     dbs      = NULL,
     sorting  = NULL,
@@ -126,11 +137,14 @@ seapiperdata_from_objects <- function(cntr, annot, exprs,
 #' @param primary_id name of the column in the annotion data frame
 #'        which corresponds to the primary gene identifier (including the
 #'        row names of the contrasts results in the cntr object)
+#' @param sample_id sample identifier column in covariates used to link
+#'   covariates to expression data (default: `"SampleID"`).
 #' @importFrom Rseasnap load_de_pipeline 
 #' @importFrom Rseasnap get_tmod_res get_tmod_dbs get_tmod_mapping get_config
 #' @importFrom Rseasnap get_covariates get_object get_annot get_contrasts 
 #' @export
 seapiperdata_from_rseasnap <- function(pip, primary_id="PrimaryID",
+                                       sample_id="SampleID",
                                        annot=NULL, cntr=NULL, tmod_res=NULL, tmod_dbs=NULL) {
 
   ## pip can be a pipeline or a list of pipelines. In this first case, we
@@ -145,6 +159,7 @@ seapiperdata_from_rseasnap <- function(pip, primary_id="PrimaryID",
   }
 
   message("preparing...")
+  sample_id <- .normalize_sample_id_value(sample_id, "seapiperdata_from_rseasnap")
   if(is.null(annot))    { annot <- list() }
   if(is.null(cntr))     { cntr <- list() }
   if(is.null(tmod_res)) { tmod_res <- list() }
@@ -153,7 +168,8 @@ seapiperdata_from_rseasnap <- function(pip, primary_id="PrimaryID",
   data <- imap(pip, ~ {
     .pip <- .x
     .id  <- .y
-    .prepare_data_single_pipeline(.id, .pip, primary_id, annot, cntr, tmod_res, tmod_dbs)
+    .prepare_data_single_pipeline(.id, .pip, primary_id, sample_id,
+                                  annot, cntr, tmod_res, tmod_dbs)
   })
 
   .as_seapiperdata(transpose(data))
@@ -177,12 +193,15 @@ seapiperdata_from_rseasnap <- function(pip, primary_id="PrimaryID",
 #' * `tmod_map`: tmod mapping object (`get_tmod_mapping` output)
 #' * `tmod_gl`: tmod gene-ranking object (`gl.rds`-like nested structure)
 #' * `config`: `list` with sea-snap style config fields
+#' * `sample_id`: optional string with sample ID column in `covar`
 #' * `covar`: `data.frame` of sample covariates (required)
 #' * `rld`: numeric matrix/data.frame (genes x samples)
 #' * `pca`: PCA scores matrix/data.frame (samples x PCs)
 #'
 #' @param yaml_file path to a YAML file describing RDS locations
 #' @param primary_id name of the primary gene ID column
+#' @param sample_id default sample identifier column in `covar` used to link
+#'   covariates to expression data (default: `"SampleID"`).
 #' @examples
 #' # # Example YAML structure (all paths are relative to this YAML file):
 #' # datasets:
@@ -198,11 +217,13 @@ seapiperdata_from_rseasnap <- function(pip, primary_id="PrimaryID",
 #' #     rld: rld.rds
 #' @importFrom yaml read_yaml
 #' @export
-seapiperdata_from_yaml <- function(yaml_file, primary_id="PrimaryID") {
+seapiperdata_from_yaml <- function(yaml_file, primary_id="PrimaryID", sample_id="SampleID") {
   stopifnot(is.character(yaml_file), length(yaml_file) == 1)
   if(!file.exists(yaml_file)) {
     stop(sprintf("YAML file not found: %s", yaml_file))
   }
+
+  sample_id <- .normalize_sample_id_value(sample_id, "seapiperdata_from_yaml")
 
   spec <- read_yaml(yaml_file)
   if(is.null(spec) || !is.list(spec)) {
@@ -219,7 +240,8 @@ seapiperdata_from_yaml <- function(yaml_file, primary_id="PrimaryID") {
   }
 
   base_dir <- dirname(normalizePath(yaml_file, mustWork=TRUE))
-  data <- imap(datasets, ~ .load_custom_yaml_dataset(.x, .y, base_dir, primary_id))
+  data <- imap(datasets, ~ .load_custom_yaml_dataset(.x, .y, base_dir, primary_id,
+                                                     sample_id_default=sample_id))
 
   .as_seapiperdata(transpose(data))
 }
@@ -396,7 +418,7 @@ custom_yaml_to_seapiperdata <- function(...) {
 # Returns character vector of field names to merge.
 .merge_field_names <- function(x, y) {
   schema_fields <- c("annot", "cntr", "tmod_res", "tmod_dbs", "tmod_map", "tmod_gl",
-                     "config", "covar", "annot_linkout", "dbs", "sorting",
+                     "config", "sample_id", "covar", "annot_linkout", "dbs", "sorting",
                      "rld", "pca", "cntr_titles")
   unique(c(schema_fields, names(x), names(y)))
 }
@@ -422,18 +444,19 @@ custom_yaml_to_seapiperdata <- function(...) {
 }
 # Load and normalize one dataset section from the YAML spec.
 # Returns a single normalized dataset list matching the seaPiperData schema.
-.load_custom_yaml_dataset <- function(dataset_spec, dataset_name, base_dir, primary_id) {
+.load_custom_yaml_dataset <- function(dataset_spec, dataset_name, base_dir, primary_id,
+                                      sample_id_default="SampleID") {
   if(!is.list(dataset_spec)) {
     stop(sprintf("Dataset `%s` must be a YAML mapping", dataset_name))
   }
 
   keys <- c("annot", "cntr", "tmod_res", "tmod_dbs", "tmod_map", "tmod_gl",
-            "config", "covar", "rld", "pca")
+            "config", "sample_id", "covar", "rld", "pca")
   ret <- .read_dataset_keys(dataset_spec, keys, base_dir, dataset_name)
   .validate_required_and_report_missing(ret, keys, dataset_name)
   ret <- .normalize_core_inputs(ret, dataset_name, primary_id)
   ret <- .ensure_dataset_config(ret, dataset_name)
-  ret <- .normalize_covar(ret)
+  ret <- .normalize_covar(ret, dataset_name, sample_id_default=sample_id_default)
   ret <- .normalize_tmod_inputs(ret, dataset_name, primary_id)
   ret <- .compute_pca_if_missing(ret, dataset_name)
   .finalize_dataset(ret)
@@ -456,7 +479,7 @@ custom_yaml_to_seapiperdata <- function(...) {
     stop(sprintf("Dataset `%s`: `covar` is required", dataset_name))
   }
 
-  optional_keys <- keys[keys != "covar"]
+  optional_keys <- keys[!keys %in% c("covar", "sample_id")]
   missing_optional <- optional_keys[vapply(ret[optional_keys], is.null, logical(1))]
   if(length(missing_optional) > 0) {
     message(
@@ -541,13 +564,52 @@ custom_yaml_to_seapiperdata <- function(...) {
   ret
 }
 
+# Normalize and validate one sample-id value.
+# Returns a non-empty character scalar.
+.normalize_sample_id_value <- function(sample_id, context="sample_id") {
+  sample_id <- as.character(sample_id)[1]
+  if(is.na(sample_id) || !nzchar(sample_id)) {
+    stop(sprintf("`sample_id` in %s must be a non-empty string", context))
+  }
+  sample_id
+}
+
+# Normalize covariates and set rownames to the declared sample-id column.
+# Returns a covariate data.frame with validated sample IDs.
+.normalize_covar_sample_ids <- function(covar, sample_id, context="covar") {
+  covar <- as.data.frame(covar)
+
+  if(!sample_id %in% colnames(covar)) {
+    stop(sprintf("`covar` in %s must contain sample ID column `%s`", context, sample_id))
+  }
+
+  ids <- as.character(covar[[sample_id]])
+  if(any(is.na(ids) | ids == "")) {
+    stop(sprintf("`covar` in %s has missing or empty sample IDs in `%s`", context, sample_id))
+  }
+  if(anyDuplicated(ids)) {
+    stop(sprintf("`covar` in %s must have unique sample IDs in `%s`", context, sample_id))
+  }
+
+  rownames(covar) <- ids
+  covar
+}
+
 # Normalize covariate table and row names.
 # Returns dataset list with normalized covar data.frame.
-.normalize_covar <- function(ret) {
-  ret$covar <- as.data.frame(ret$covar)
-  if(is.null(rownames(ret$covar)) && "ID" %in% colnames(ret$covar)) {
-    rownames(ret$covar) <- ret$covar[["ID"]]
+.normalize_covar <- function(ret, dataset_name, sample_id_default="SampleID") {
+  sample_id <- ret$sample_id
+  if(is.null(sample_id)) {
+    sample_id <- sample_id_default
   }
+  sample_id <- .normalize_sample_id_value(sample_id, sprintf("dataset `%s`", dataset_name))
+
+  ret$covar <- .normalize_covar_sample_ids(
+    covar=ret$covar,
+    sample_id=sample_id,
+    context=sprintf("dataset `%s`", dataset_name)
+  )
+  ret$sample_id <- sample_id
   ret
 }
 
@@ -638,6 +700,10 @@ custom_yaml_to_seapiperdata <- function(...) {
 .yaml_spec_value <- function(value, base_dir, dataset_name, key) {
   if(is.null(value)) {
     return(NULL)
+  }
+
+  if(identical(key, "sample_id")) {
+    return(value)
   }
 
   if(is.character(value) && length(value) == 1) {

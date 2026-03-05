@@ -1,5 +1,9 @@
 ## server logic for gene browser modules
-.seapiper_server_gene <- function(input, output, session, data, gene_id, palettes) {
+.seapiper_server_gene <- function(input, output, session, data, gene_id, palettes, covar=NULL) {
+  if(is.null(covar)) {
+    covar <- data[["covar"]]
+  }
+
   geneBrowserTableServer(id="geneT",
     cntr=data[["cntr"]],
     annot=data[["annot"]],
@@ -12,7 +16,7 @@
 
   geneBrowserPlotServer(id="geneP",
                         gene_id=gene_id,
-                        covar=data[["covar"]],
+                        covar=covar,
                         exprs=data[["rld"]], annot=data[["annot"]], 
                         annot_linkout=data[["annot_linkout"]],
                         cntr=data[["cntr"]],

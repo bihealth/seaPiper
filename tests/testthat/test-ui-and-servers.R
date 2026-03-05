@@ -11,6 +11,35 @@ test_that("get_dataset_ids returns first available named list section", {
   expect_equal(ids, character(0))
 })
 
+test_that("expression modules use a single explicit sample-id column", {
+  expect_equal(
+    seaPiper:::.resolve_sample_id_col(list(default="SampleID")),
+    "SampleID"
+  )
+
+  expect_error(
+    seaPiper:::.resolve_sample_id_col(list(ds1="SampleID", ds2="sid")),
+    "same `sample_id`"
+  )
+
+  expect_no_error(
+    seaPiper:::.normalize_expression_covar(
+      covar=list(default=make_fixture_covar()),
+      sample_id_col="SampleID"
+    )
+  )
+
+  bad_covar <- make_fixture_covar()
+  bad_covar$SampleID <- NULL
+  expect_error(
+    seaPiper:::.normalize_expression_covar(
+      covar=list(default=bad_covar),
+      sample_id_col="SampleID"
+    ),
+    "must contain sample ID column"
+  )
+})
+
 test_that("sidebar always includes Help and conditionally includes module tabs", {
   features <- list(
     gene_browser=TRUE,

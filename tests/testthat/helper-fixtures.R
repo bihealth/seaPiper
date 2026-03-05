@@ -51,12 +51,14 @@ make_fixture_cntr <- function(named=TRUE, include_primary=FALSE) {
 
 # Build a simple covariate table keyed by sample ID.
 make_fixture_covar <- function() {
+  sample_ids <- paste0("sample", seq_len(4))
   covar <- data.frame(
-    ID=paste0("sample", seq_len(4)),
+    SampleID=sample_ids,
+    ID=sample_ids,
     group=c("A", "A", "B", "B"),
     stringsAsFactors=FALSE
   )
-  rownames(covar) <- covar$ID
+  rownames(covar) <- covar$SampleID
   covar
 }
 

@@ -83,6 +83,12 @@ seapiper <- function(data, title="Workflow output explorer",
   ## Prepare the UI
   validation <- validate_seapiperdata(data)
   features <- validation$features
+  sample_id_col <- "SampleID"
+  covar_for_expression <- data[["covar"]]
+  if(isTRUE(features$covar)) {
+    sample_id_col <- .resolve_sample_id_col(data[["sample_id"]], default="SampleID")
+    covar_for_expression <- .normalize_expression_covar(data[["covar"]], sample_id_col)
+  }
   inferred_palette_variables <- lapply(data[["covar"]], bioshmods::infer_palette_variables, cleanup=TRUE)
 
   export_objects <- .build_export_objects(data)
@@ -121,7 +127,8 @@ seapiper <- function(data, title="Workflow output explorer",
     }
 
     if(isTRUE(features$gene_browser)) {
-      .seapiper_server_gene(input, output, session, data, gene_id, palettes)
+      .seapiper_server_gene(input, output, session, data, gene_id, palettes,
+                            covar=covar_for_expression)
     }
 
     if(isTRUE(features$tmod)) {
@@ -134,7 +141,9 @@ seapiper <- function(data, title="Workflow output explorer",
                           enable_volcano=isTRUE(features$volcano),
                           enable_heatmap=isTRUE(features$heatmap),
                           enable_pca=isTRUE(features$pca),
-                          palettes=palettes)
+                          palettes=palettes,
+                          covar=covar_for_expression,
+                          sample_id_col=sample_id_col)
 
     if(isTRUE(features$covar)) {
       bioshmods::colorPalettesServer(
