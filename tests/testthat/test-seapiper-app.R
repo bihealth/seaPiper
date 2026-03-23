@@ -1,28 +1,4 @@
-test_that("seapiper enforces bioshmods version requirement", {
-  local_mocked_bindings(
-    # Mock installed bioshmods version as older than required.
-    packageVersion=function(...) numeric_version("0.0.0"),
-    # Force version comparison to report installed < required.
-    compareVersion=function(...) -1L,
-    .package="utils"
-  )
-
-  data <- structure(list(), class="seaPiperData")
-  expect_error(
-    seapiper(data),
-    "requires bioshmods >="
-  )
-})
-
 test_that("seapiper validates input class", {
-  local_mocked_bindings(
-    # Mock installed bioshmods version as sufficiently new.
-    packageVersion=function(...) numeric_version("9.9.9"),
-    # Force version comparison to pass the version gate.
-    compareVersion=function(...) 1L,
-    .package="utils"
-  )
-
   expect_error(
     seapiper(list()),
     "`data` must be a seaPiperData object"
@@ -30,14 +6,6 @@ test_that("seapiper validates input class", {
 })
 
 test_that("seapiper can return a shiny app object with mocked internals", {
-  local_mocked_bindings(
-    # Mock installed bioshmods version as sufficiently new.
-    packageVersion=function(...) numeric_version("9.9.9"),
-    # Force version comparison to pass the version gate.
-    compareVersion=function(...) 1L,
-    .package="utils"
-  )
-
   local_mocked_bindings(
     # Return a minimal validation response with all feature flags disabled.
     validate_seapiperdata=function(...) {
@@ -64,14 +32,6 @@ test_that("seapiper can return a shiny app object with mocked internals", {
 })
 
 test_that("seapiper reports disabled modules when inputs are missing", {
-  local_mocked_bindings(
-    # Mock installed bioshmods version as sufficiently new.
-    packageVersion=function(...) numeric_version("9.9.9"),
-    # Force version comparison to pass the version gate.
-    compareVersion=function(...) 1L,
-    .package="utils"
-  )
-
   local_mocked_bindings(
     # Return validation with one missing module dependency to trigger message().
     validate_seapiperdata=function(...) {

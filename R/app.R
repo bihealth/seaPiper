@@ -52,21 +52,6 @@ seapiper <- function(data, title="Workflow output explorer",
   env <- environment()  # can use globalenv(), parent.frame(), etc
   env <- .GlobalEnv
 
-  required_bioshmods <- "0.0.0.9004"
-  installed_bioshmods <- as.character(utils::packageVersion("bioshmods"))
-  if(utils::compareVersion(installed_bioshmods, required_bioshmods) < 0) {
-    stop(
-      sprintf(
-        paste(
-          "seaPiper requires bioshmods >= %s, but %s is installed.",
-          "Install/update bioshmods from /home/january/Projects/R/bioshmods/bioshmods."
-        ),
-        required_bioshmods,
-        installed_bioshmods
-      )
-    )
-  }
-
   if(!inherits(data, "seaPiperData")) {
     stop("`data` must be a seaPiperData object")
   }
