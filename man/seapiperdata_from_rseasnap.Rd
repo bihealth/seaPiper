@@ -7,6 +7,7 @@
 seapiperdata_from_rseasnap(
   pip,
   primary_id = "PrimaryID",
+  sample_id = "label",
   annot = NULL,
   cntr = NULL,
   tmod_res = NULL,
@@ -19,6 +20,9 @@ seapiperdata_from_rseasnap(
 \item{primary_id}{name of the column in the annotion data frame
 which corresponds to the primary gene identifier (including the
 row names of the contrasts results in the cntr object)}
+
+\item{sample_id}{sample identifier column in covariates used to link
+covariates to expression data (default: \code{"SampleID"}).}
 
 \item{annot}{annotation returned by \code{get_annot}}
 

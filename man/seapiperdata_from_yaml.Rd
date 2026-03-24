@@ -4,12 +4,19 @@
 \alias{seapiperdata_from_yaml}
 \title{Build seaPiperData from a YAML file of RDS paths}
 \usage{
-seapiperdata_from_yaml(yaml_file, primary_id = "PrimaryID")
+seapiperdata_from_yaml(
+  yaml_file,
+  primary_id = "PrimaryID",
+  sample_id = "SampleID"
+)
 }
 \arguments{
 \item{yaml_file}{path to a YAML file describing RDS locations}
 
 \item{primary_id}{name of the primary gene ID column}
+
+\item{sample_id}{default sample identifier column in \code{covar} used to link
+covariates to expression data (default: \code{"SampleID"}).}
 }
 \description{
 Load a \code{seaPiperData} object from a YAML file that points to serialized R
@@ -29,6 +36,7 @@ Supported dataset keys and expected \code{.rds} object types are:
 \item \code{tmod_map}: tmod mapping object (\code{get_tmod_mapping} output)
 \item \code{tmod_gl}: tmod gene-ranking object (\code{gl.rds}-like nested structure)
 \item \code{config}: \code{list} with sea-snap style config fields
+\item \code{sample_id}: optional string with sample ID column in \code{covar}
 \item \code{covar}: \code{data.frame} of sample covariates (required)
 \item \code{rld}: numeric matrix/data.frame (genes x samples)
 \item \code{pca}: PCA scores matrix/data.frame (samples x PCs)

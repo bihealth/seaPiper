@@ -10,6 +10,7 @@ seapiperdata_from_objects(
   exprs,
   primary_id = "PrimaryID",
   covar = NULL,
+  sample_id = "SampleID",
   config = NULL,
   title = NULL
 )
@@ -24,6 +25,9 @@ seapiperdata_from_objects(
 \item{primary_id}{primary gene identifier column name}
 
 \item{covar}{optional covariate data frame (samples x variables)}
+
+\item{sample_id}{sample identifier column in \code{covar} used to link
+covariates to expression data (default: \code{"SampleID"}).}
 
 \item{config}{optional configuration list; if NULL, defaults are created}
 

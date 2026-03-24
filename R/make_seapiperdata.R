@@ -19,6 +19,7 @@
 #'   covariates to expression data (default: `"SampleID"`).
 #' @param config optional configuration list; if NULL, defaults are created
 #' @param title optional dataset title stored in `config$dataset_title`
+#' @importFrom stats prcomp var setNames
 #' @export
 seapiperdata_from_objects <- function(cntr, annot, exprs,
                                       primary_id="PrimaryID",
@@ -314,6 +315,10 @@ merge_seapiperdata <- function(x, y, dataset_names=NULL) {
 #' @param value new dataset IDs. Use a single string for single-dataset objects,
 #'   or a character vector with one value per dataset for multi-dataset objects.
 #' @return The renamed `seaPiperData` object.
+#' @name name-seaPiperData
+#' @rdname name-seaPiperData
+#' @aliases name<-
+#' @usage name(x) <- value
 #' @export
 `name<-` <- function(x, value) {
   .assert_seapiperdata(x, "x")
