@@ -110,6 +110,7 @@
 
   if(isTRUE(enable_volcano)) {
     volcanoServer("volcano", data[["cntr"]], annot=data[["annot"]],
+                  ui_config = list(show_button_label = "Show heatmap"),
                   gene_id=gene_id, selected_ids=selected_ids)
   }
 
