@@ -127,6 +127,7 @@ seapiper <- function(data, title="Workflow output explorer",
 
     if(isTRUE(features$tmod)) {
       .seapiper_server_tmod(input, output, session, data, gs_id, gene_id,
+                            selected_ids=selected_ids,
                             enable_panel=isTRUE(features$tmod_panel))
     }
 
