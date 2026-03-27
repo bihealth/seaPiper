@@ -95,33 +95,61 @@ test_that("server misc wrapper dispatches only enabled modules", {
   calls <- new.env(parent=emptyenv())
   calls$disco <- 0L
   calls$volcano <- 0L
+  calls$heatmap <- 0L
   calls$pca <- 0L
+  calls$selected_ids_volcano <- NULL
+  calls$selected_ids_heatmap <- NULL
+  calls$sample_id_col_heatmap <- NULL
+
+  selected_ids <- list(ids=c("gene1", "gene2"))
+
+  local_mocked_bindings(
+    # Count heatmap module dispatches and capture shared selected_ids wiring.
+    heatmapServer=function(...) {
+      calls$heatmap <- calls$heatmap + 1L
+      args <- list(...)
+      calls$selected_ids_heatmap <- args$selected_ids
+      calls$sample_id_col_heatmap <- args$sample_id_col
+    },
+    .package="bioshmods"
+  )
 
   local_mocked_bindings(
     # Count disco module dispatches.
     discoServer=function(...) calls$disco <- calls$disco + 1L,
-    # Count volcano module dispatches.
-    volcanoServer=function(...) calls$volcano <- calls$volcano + 1L,
+    # Count volcano module dispatches and capture shared selected_ids wiring.
+    volcanoServer=function(...) {
+      calls$volcano <- calls$volcano + 1L
+      args <- list(...)
+      calls$selected_ids_volcano <- args$selected_ids
+    },
     # Count PCA module dispatches.
     pcaServer=function(...) calls$pca <- calls$pca + 1L,
     .package="seaPiper"
   )
 
-  data <- list(cntr=list(), annot=list(), pca=list(), covar=list())
+  data <- list(cntr=list(), annot=list(), pca=list(), covar=list(), rld=list())
   seaPiper:::.seapiper_server_misc(
     input=NULL,
     output=NULL,
     session=NULL,
     data=data,
     gene_id=list(),
+    selected_ids=selected_ids,
     enable_disco=TRUE,
-    enable_volcano=FALSE,
-    enable_pca=TRUE
+    enable_volcano=TRUE,
+    enable_heatmap=TRUE,
+    enable_pca=TRUE,
+    sample_id_col="SampleID"
   )
 
   expect_equal(calls$disco, 1L)
-  expect_equal(calls$volcano, 0L)
+  expect_equal(calls$volcano, 1L)
+  expect_equal(calls$heatmap, 1L)
   expect_equal(calls$pca, 1L)
+  expect_identical(calls$selected_ids_volcano, selected_ids)
+  expect_identical(calls$selected_ids_heatmap, selected_ids)
+  expect_identical(calls$sample_id_col_heatmap, "SampleID")
 })
 
 test_that("server export wrapper only registers when payload is present", {

@@ -84,7 +84,8 @@
 }
 
 ## server logic for heatmap, disco, volcano, and pca modules
-.seapiper_server_misc <- function(input, output, session, data, gene_id, enable_disco=FALSE,
+.seapiper_server_misc <- function(input, output, session, data, gene_id,
+                                  selected_ids=NULL, enable_disco=FALSE,
                                   enable_volcano=FALSE, enable_heatmap=FALSE,
                                   enable_pca=FALSE, palettes=NULL, covar=NULL,
                                   sample_id_col="SampleID") {
@@ -98,6 +99,7 @@
                              exprs=data[["rld"]],
                              cntr=data[["cntr"]],
                              covar=covar,
+                             selected_ids=selected_ids,
                              palettes=palettes,
                              sample_id_col=sample_id_col)
   }
@@ -107,7 +109,8 @@
   }
 
   if(isTRUE(enable_volcano)) {
-    volcanoServer("volcano", data[["cntr"]], annot=data[["annot"]], gene_id=gene_id)
+    volcanoServer("volcano", data[["cntr"]], annot=data[["annot"]],
+                  gene_id=gene_id, selected_ids=selected_ids)
   }
 
   if(isTRUE(enable_pca)) {

@@ -58,3 +58,22 @@ test_that("seapiper reports disabled modules when inputs are missing", {
     "disabled modules"
   )
 })
+
+test_that("heatmap tab switch helper only triggers for non-empty selections", {
+  calls <- new.env(parent=emptyenv())
+  calls$tab <- NULL
+
+  local_mocked_bindings(
+    updateTabItems=function(session, inputId, selected, ...) {
+      calls$tab <- selected
+      NULL
+    },
+    .package="seaPiper"
+  )
+
+  expect_false(seaPiper:::.switch_to_heatmap_tab(NULL, NULL))
+  expect_false(seaPiper:::.switch_to_heatmap_tab(NULL, character(0)))
+
+  expect_true(seaPiper:::.switch_to_heatmap_tab(NULL, c("gene1", "gene2")))
+  expect_identical(calls$tab, "heatmap")
+})

@@ -103,9 +103,18 @@ seapiper <- function(data, title="Workflow output explorer",
     ## selection has been done
     gene_id <- reactiveValues()
 
+    ## shared multi-gene selection state for cross-module communication
+    selected_ids <- reactiveVal()
+
     ## this is reactive value for gene sets
     gs_id   <- reactiveValues()
     palettes <- reactiveVal(NULL)
+
+    if(isTRUE(features$heatmap)) {
+      observeEvent(selected_ids(), {
+        .switch_to_heatmap_tab(session, selected_ids())
+      }, ignoreInit=TRUE)
+    }
 
     if(isTRUE(features$info)) {
       .seapiper_server_info(input, output, session, data, title)
@@ -122,6 +131,7 @@ seapiper <- function(data, title="Workflow output explorer",
     }
 
     .seapiper_server_misc(input, output, session, data, gene_id,
+                          selected_ids=selected_ids,
                           enable_disco=isTRUE(features$disco),
                           enable_volcano=isTRUE(features$volcano),
                           enable_heatmap=isTRUE(features$heatmap),
@@ -161,4 +171,16 @@ seapiper <- function(data, title="Workflow output explorer",
   }
 
   shinyApp(ui, server)
+}
+
+# Switch the dashboard focus to the heatmap tab when selected IDs are available.
+# Returns TRUE when a tab switch was requested, otherwise FALSE.
+.switch_to_heatmap_tab <- function(session, selected_ids) {
+  if(is.null(selected_ids) || length(selected_ids) == 0L) {
+    return(invisible(FALSE))
+  }
+  print(selected_ids)
+
+  updateTabItems(session, "navid", "heatmap")
+  invisible(TRUE)
 }
