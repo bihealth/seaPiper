@@ -124,3 +124,57 @@ test_that("seapiperdata_from_yaml supports custom sample_id", {
   expect_equal(spd$sample_id$default, "sid")
   expect_equal(rownames(spd$covar$default), covar$sid)
 })
+
+test_that("seapiperdata_from_yaml validates user-provided config explicitly", {
+  tmp_dir <- tempfile("sp_yaml_")
+  dir.create(tmp_dir)
+  on.exit(unlink(tmp_dir, recursive=TRUE), add=TRUE)
+
+  saveRDS(make_fixture_annot(), file.path(tmp_dir, "annot.rds"))
+  saveRDS(make_fixture_cntr(), file.path(tmp_dir, "cntr.rds"))
+  saveRDS(make_fixture_covar(), file.path(tmp_dir, "covar.rds"))
+  saveRDS(make_fixture_exprs(), file.path(tmp_dir, "rld.rds"))
+
+  bad_config <- list(dataset_title="broken")
+  saveRDS(bad_config, file.path(tmp_dir, "config_missing_fields.rds"))
+
+  yaml_file <- write_yaml_fixture(
+    c(
+      "datasets:",
+      "  default:",
+      "    annot: annot.rds",
+      "    cntr: cntr.rds",
+      "    covar: covar.rds",
+      "    rld: rld.rds",
+      "    config: config_missing_fields.rds"
+    ),
+    file.path(tmp_dir, "bad_config.yaml")
+  )
+
+  expect_error(
+    seapiperdata_from_yaml(yaml_file),
+    "config for dataset `default` is missing required field\\(s\\): organism, experiment, contrasts, tmod, filter"
+  )
+
+  bad_config <- make_fixture_config()
+  bad_config$filter$min_count_n <- NULL
+  saveRDS(bad_config, file.path(tmp_dir, "config_missing_filter_field.rds"))
+
+  yaml_file <- write_yaml_fixture(
+    c(
+      "datasets:",
+      "  default:",
+      "    annot: annot.rds",
+      "    cntr: cntr.rds",
+      "    covar: covar.rds",
+      "    rld: rld.rds",
+      "    config: config_missing_filter_field.rds"
+    ),
+    file.path(tmp_dir, "bad_filter_config.yaml")
+  )
+
+  expect_error(
+    seapiperdata_from_yaml(yaml_file),
+    "config for dataset `default`: `filter` is missing required field\\(s\\): min_count_n"
+  )
+})

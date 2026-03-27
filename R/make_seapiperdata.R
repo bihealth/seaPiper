@@ -88,11 +88,14 @@ seapiperdata_from_objects <- function(cntr, annot, exprs,
       filter     = list(low_counts=NA_integer_, min_counts=NA_integer_, min_count_n=NA_integer_),
       dataset_title = if(is.null(title)) "default" else title
     )
-  } else if(is.null(config$dataset_title)) {
-    if(!is.null(title)) {
-      config$dataset_title <- title
-    } else {
-      config$dataset_title <- "default"
+  } else {
+    .validate_user_config(config, "config in `seapiperdata_from_objects()`")
+    if(is.null(config$dataset_title)) {
+      if(!is.null(title)) {
+        config$dataset_title <- title
+      } else {
+        config$dataset_title <- "default"
+      }
     }
   }
 
@@ -562,11 +565,102 @@ custom_yaml_to_seapiperdata <- function(...) {
       dataset_title = dataset_name
     )
     message(sprintf("Dataset `%s`: `config` not provided; using default config.", dataset_name))
-  } else if(is.null(ret$config$dataset_title)) {
-    ret$config$dataset_title <- dataset_name
+  } else {
+    .validate_user_config(ret$config, sprintf("config for dataset `%s`", dataset_name))
+    if(is.null(ret$config$dataset_title)) {
+      ret$config$dataset_title <- dataset_name
+    }
   }
 
   ret
+}
+
+# Validate the minimal structure expected from a user-provided config list.
+# Returns NULL; used for side effects (errors).
+.validate_user_config <- function(config, context="config") {
+  if(!is.list(config)) {
+    stop(sprintf("%s must be a list", context))
+  }
+
+  required_top_level <- c("organism", "experiment", "contrasts", "tmod", "filter")
+  missing_top_level <- required_top_level[vapply(config[required_top_level], is.null, logical(1))]
+  if(length(missing_top_level) > 0L) {
+    stop(sprintf(
+      "%s is missing required field(s): %s",
+      context,
+      paste(missing_top_level, collapse=", ")
+    ))
+  }
+
+  if(!is.list(config$organism)) {
+    stop(sprintf("%s: `organism` must be a list", context))
+  }
+  if(is.null(config$organism$name) || !is.character(config$organism$name) ||
+     length(config$organism$name) != 1L || !nzchar(config$organism$name)) {
+    stop(sprintf("%s: `organism$name` must be a non-empty string", context))
+  }
+  if(is.null(config$organism$taxon) || !is.character(config$organism$taxon) ||
+     length(config$organism$taxon) != 1L || !nzchar(config$organism$taxon)) {
+    stop(sprintf("%s: `organism$taxon` must be a non-empty string", context))
+  }
+
+  if(!is.list(config$experiment)) {
+    stop(sprintf("%s: `experiment` must be a list", context))
+  }
+  if(is.null(config$experiment$design_formula) || !is.character(config$experiment$design_formula) ||
+     length(config$experiment$design_formula) != 1L || !nzchar(config$experiment$design_formula)) {
+    stop(sprintf("%s: `experiment$design_formula` must be a non-empty string", context))
+  }
+
+  if(!is.list(config$contrasts)) {
+    stop(sprintf("%s: `contrasts` must be a list", context))
+  }
+  if(is.null(config$contrasts$contrast_list) || !is.list(config$contrasts$contrast_list)) {
+    stop(sprintf("%s: `contrasts$contrast_list` must be a list", context))
+  }
+  invalid_contrast_idx <- which(!vapply(config$contrasts$contrast_list, function(.x) {
+    is.list(.x) &&
+      !is.null(.x$ID) && is.character(.x$ID) && length(.x$ID) == 1L && nzchar(.x$ID) &&
+      !is.null(.x$title) && is.character(.x$title) && length(.x$title) == 1L && nzchar(.x$title)
+  }, logical(1)))
+  if(length(invalid_contrast_idx) > 0L) {
+    stop(sprintf(
+      "%s: each entry in `contrasts$contrast_list` must contain non-empty `ID` and `title` strings; first invalid entry: %d",
+      context,
+      invalid_contrast_idx[[1L]]
+    ))
+  }
+
+  if(!is.list(config$tmod)) {
+    stop(sprintf("%s: `tmod` must be a list", context))
+  }
+  if(is.null(config$tmod$databases) || !is.list(config$tmod$databases)) {
+    stop(sprintf("%s: `tmod$databases` must be a list", context))
+  }
+  if(is.null(config$tmod$sort_by) || !is.character(config$tmod$sort_by)) {
+    stop(sprintf("%s: `tmod$sort_by` must be a character vector", context))
+  }
+
+  if(!is.list(config$filter)) {
+    stop(sprintf("%s: `filter` must be a list", context))
+  }
+  filter_fields <- c("low_counts", "min_counts", "min_count_n")
+  missing_filter_fields <- filter_fields[vapply(config$filter[filter_fields], is.null, logical(1))]
+  if(length(missing_filter_fields) > 0L) {
+    stop(sprintf(
+      "%s: `filter` is missing required field(s): %s",
+      context,
+      paste(missing_filter_fields, collapse=", ")
+    ))
+  }
+
+  if(!is.null(config$dataset_title) &&
+     (!is.character(config$dataset_title) || length(config$dataset_title) != 1L ||
+      !nzchar(config$dataset_title))) {
+    stop(sprintf("%s: `dataset_title` must be a non-empty string when provided", context))
+  }
+
+  invisible(NULL)
 }
 
 # Normalize and validate one sample-id value.

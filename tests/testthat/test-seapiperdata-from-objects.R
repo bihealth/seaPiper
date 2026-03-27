@@ -104,3 +104,30 @@ test_that("seapiperdata_from_objects honors custom sample_id and validates covar
     "must contain sample ID column"
   )
 })
+
+test_that("seapiperdata_from_objects validates user-provided config explicitly", {
+  expect_error(
+    seapiperdata_from_objects(
+      cntr=make_fixture_cntr(),
+      annot=make_fixture_annot(),
+      exprs=make_fixture_exprs(),
+      covar=make_fixture_covar(),
+      config=list(dataset_title="broken")
+    ),
+    "missing required field\\(s\\): organism, experiment, contrasts, tmod, filter"
+  )
+
+  bad_config <- make_fixture_config()
+  bad_config$contrasts$contrast_list <- list(list(ID="cntr_a"))
+
+  expect_error(
+    seapiperdata_from_objects(
+      cntr=make_fixture_cntr(),
+      annot=make_fixture_annot(),
+      exprs=make_fixture_exprs(),
+      covar=make_fixture_covar(),
+      config=bad_config
+    ),
+    "each entry in `contrasts\\$contrast_list` must contain non-empty `ID` and `title` strings"
+  )
+})
