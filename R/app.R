@@ -104,15 +104,15 @@ seapiper <- function(data, title="Workflow output explorer",
     gene_id <- reactiveValues()
 
     ## shared multi-gene selection state for cross-module communication
-    selected_ids <- reactiveVal()
+    selection <- reactiveValues()
 
     ## this is reactive value for gene sets
     gs_id   <- reactiveValues()
     palettes <- reactiveVal(NULL)
 
     if(isTRUE(features$heatmap)) {
-      observeEvent(selected_ids(), {
-        .switch_to_heatmap_tab(session, selected_ids())
+      observeEvent(selection$ids, {
+        .switch_to_heatmap_tab(session, selection$ids)
       }, ignoreInit=TRUE)
     }
 
@@ -127,12 +127,12 @@ seapiper <- function(data, title="Workflow output explorer",
 
     if(isTRUE(features$tmod)) {
       .seapiper_server_tmod(input, output, session, data, gs_id, gene_id,
-                            selected_ids=selected_ids,
+                            selection=selection,
                             enable_panel=isTRUE(features$tmod_panel))
     }
 
     .seapiper_server_misc(input, output, session, data, gene_id,
-                          selected_ids=selected_ids,
+                          selection=selection,
                           enable_disco=isTRUE(features$disco),
                           enable_volcano=isTRUE(features$volcano),
                           enable_heatmap=isTRUE(features$heatmap),

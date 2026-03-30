@@ -1,5 +1,5 @@
 ## server logic for tmod-related modules
-.seapiper_server_tmod <- function(input, output, session, data, gs_id, gene_id, selected_ids = NULL, enable_panel=FALSE) {
+.seapiper_server_tmod <- function(input, output, session, data, gs_id, gene_id, selection = NULL, enable_panel=FALSE) {
   tmodBrowserPlotServer("tmodP", gs_id, 
                                     tmod_dbs=data[["tmod_dbs"]], 
                                     cntr    =data[["cntr"]], 
@@ -7,7 +7,7 @@
                                     tmod_gl =data[["tmod_gl"]], 
                                     annot   =data[["annot"]],
                                     tmod_res=data[["tmod_res"]],
-                                    selected_ids=selected_ids,
+                                    selection=selection,
                                     ui_config = list(show_button_label = "Show heatmap"),
                                     gene_id=gene_id)
 
