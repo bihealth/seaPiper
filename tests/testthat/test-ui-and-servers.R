@@ -91,24 +91,46 @@ test_that("pipeline body can be built with minimal features", {
   expect_match(html, "help")
 })
 
+test_that("tmod contrast choices are restricted to contrasts present in tmod_res", {
+  cntr_titles <- list(Proteomics=c(
+    "Contrast 1"="contrast1",
+    "Contrast 2"="contrast2",
+    "Contrast 3"="contrast3"
+  ))
+
+  tmod_res <- list(
+    Proteomics=list(
+      "contrast2"=list(),
+      "contrast4"=list()
+    )
+  )
+
+  filtered <- seaPiper:::.filter_tmod_cntr_titles(cntr_titles, tmod_res)
+
+  expect_identical(
+    filtered,
+    list(Proteomics=c("Contrast 2"="contrast2"))
+  )
+})
+
 test_that("server misc wrapper dispatches only enabled modules", {
   calls <- new.env(parent=emptyenv())
   calls$disco <- 0L
   calls$volcano <- 0L
   calls$heatmap <- 0L
   calls$pca <- 0L
-  calls$selected_ids_volcano <- NULL
-  calls$selected_ids_heatmap <- NULL
+  calls$selection_volcano <- NULL
+  calls$selection_heatmap <- NULL
   calls$sample_id_col_heatmap <- NULL
 
-  selected_ids <- list(ids=c("gene1", "gene2"))
+  selection <- list(ids=c("gene1", "gene2"))
 
   local_mocked_bindings(
-    # Count heatmap module dispatches and capture shared selected_ids wiring.
+    # Count heatmap module dispatches and capture shared selection wiring.
     heatmapServer=function(...) {
       calls$heatmap <- calls$heatmap + 1L
       args <- list(...)
-      calls$selected_ids_heatmap <- args$selected_ids
+      calls$selection_heatmap <- args$selection
       calls$sample_id_col_heatmap <- args$sample_id_col
     },
     .package="bioshmods"
@@ -117,11 +139,11 @@ test_that("server misc wrapper dispatches only enabled modules", {
   local_mocked_bindings(
     # Count disco module dispatches.
     discoServer=function(...) calls$disco <- calls$disco + 1L,
-    # Count volcano module dispatches and capture shared selected_ids wiring.
+    # Count volcano module dispatches and capture shared selection wiring.
     volcanoServer=function(...) {
       calls$volcano <- calls$volcano + 1L
       args <- list(...)
-      calls$selected_ids_volcano <- args$selected_ids
+      calls$selection_volcano <- args$selection
     },
     # Count PCA module dispatches.
     pcaServer=function(...) calls$pca <- calls$pca + 1L,
@@ -135,7 +157,7 @@ test_that("server misc wrapper dispatches only enabled modules", {
     session=NULL,
     data=data,
     gene_id=list(),
-    selected_ids=selected_ids,
+    selection=selection,
     enable_disco=TRUE,
     enable_volcano=TRUE,
     enable_heatmap=TRUE,
@@ -147,8 +169,8 @@ test_that("server misc wrapper dispatches only enabled modules", {
   expect_equal(calls$volcano, 1L)
   expect_equal(calls$heatmap, 1L)
   expect_equal(calls$pca, 1L)
-  expect_identical(calls$selected_ids_volcano, selected_ids)
-  expect_identical(calls$selected_ids_heatmap, selected_ids)
+  expect_identical(calls$selection_volcano, selection)
+  expect_identical(calls$selection_heatmap, selection)
   expect_identical(calls$sample_id_col_heatmap, "SampleID")
 })
 

@@ -188,6 +188,7 @@ helpUI <- function() {
       cntr_titles <- cntr_titles[[1]]
     }
   }
+  tmod_cntr_titles <- .filter_tmod_cntr_titles(cntr_titles, data[["tmod_res"]])
 
     tabs <- list()
 
@@ -240,7 +241,7 @@ helpUI <- function() {
         tabItem("tmod_browser",
           box(title="Gene set enrichment overview", width=12, status="primary",
               collapsible=TRUE,
-              solidHeader=TRUE, tmodBrowserTableUI("tmodT", cntr_titles, upset_pane=TRUE)),
+              solidHeader=TRUE, tmodBrowserTableUI("tmodT", tmod_cntr_titles, upset_pane=TRUE)),
           box(title="Evidence plot", width=12, status="primary",
               collapsible=TRUE,
               solidHeader=TRUE, tmodBrowserPlotUI("tmodP"))
@@ -318,4 +319,41 @@ helpUI <- function() {
     }
   }
   character(0)
+}
+
+## restrict tmod contrast titles to contrasts that are actually present in tmod results
+.filter_tmod_cntr_titles <- function(cntr_titles, tmod_res) {
+  .default_titles <- function(contrast_ids) {
+    if(is.null(contrast_ids) || length(contrast_ids) == 0L) {
+      return(character(0))
+    }
+    stats::setNames(contrast_ids, contrast_ids)
+  }
+
+  .filter_titles <- function(titles, contrast_ids) {
+    if(is.null(titles)) {
+      return(.default_titles(contrast_ids))
+    }
+
+    if(is.null(contrast_ids) || length(contrast_ids) == 0L) {
+      return(character(0))
+    }
+
+    if(is.null(names(titles))) {
+      names(titles) <- titles
+    }
+
+    titles[unname(titles) %in% contrast_ids]
+  }
+
+  if(is.null(tmod_res) || !is.list(tmod_res) || length(tmod_res) == 0L) {
+    return(cntr_titles)
+  }
+
+  if(is.list(cntr_titles)) {
+    out <- imap(tmod_res, ~ .filter_titles(cntr_titles[[.y]], names(.x)))
+    return(out)
+  }
+
+  .filter_titles(cntr_titles, names(tmod_res[[1L]]))
 }
