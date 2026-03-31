@@ -109,9 +109,15 @@
       stop("Expected a data frame at the innermost level, but got a non-data frame object.")
     }
 
-    inner[[cname]] <- name
-    inner <- inner[, c(ncol(inner), 1:(ncol(inner) - 1)), drop=FALSE]
+
+    if(nrow(inner) == 0L) {
+      inner[[cname]] <- character(0)
+    } else {
+      inner[[cname]] <- name
+    }
+    inner
   })
+
 
   res <- do.call(rbind, res)
   res
@@ -128,7 +134,6 @@
     return(NULL)
   }
 
-  # print(names(tmod_res))
   res <- lapply(tmod_res, function(tmod_single_dataset) {
                   lapply(tmod_single_dataset, function(tmod_single_cntr) {
                     .collapse_nested_ldf(tmod_single_cntr, c("Database", "Sorting"))
