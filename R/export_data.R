@@ -115,6 +115,7 @@
     } else {
       inner[[cname]] <- name
     }
+    inner <- inner[, c(ncol(inner), seq_len(ncol(inner) - 1L)), drop=FALSE]
     inner
   })
 
