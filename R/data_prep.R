@@ -1,18 +1,28 @@
 ## prepares the data structure for a single pipeline
+.data_prep_log <- function(...) {
+  .seapiper_log(..., .prefix="data_prep")
+}
+
 .prepare_data_single_pipeline <- function(.id, .pip, primary_id, sample_id,
                                           annot, cntr, tmod_res, tmod_dbs,
                                           contrast_cols=c(primary_id, "log2FoldChange", "pvalue", "padj")) {
   ret <- list()
 
   if(is.null(annot[[.id]])) {
-    message(sprintf(" * Loading annotation for %s (consider using the annot option to speed this up)", .id))
+    .data_prep_log(sprintf(
+      "Loading annotation for %s (consider using the annot option to speed this up)",
+      .id
+    ))
     ret[["annot"]] <- get_annot(.pip)
   } else {
     ret[["annot"]] <- annot[[.id]]
   }
 
   if(is.null(cntr[[.id]])) {
-    message(sprintf(" * Loading contrasts for %s (consider using the cntr option to speed this up)", .id))
+    .data_prep_log(sprintf(
+      "Loading contrasts for %s (consider using the cntr option to speed this up)",
+      .id
+    ))
     ret[["cntr"]] <- get_contrasts(.pip)
   } else {
     ret[["cntr"]] <- cntr[[.id]]
@@ -23,11 +33,14 @@
                     ret[ , colnames(ret) %in% contrast_cols ]
                                           })
   if(is.null(tmod_res[[.id]])) {
-    message(sprintf(" * Loading tmod results for %s (consider using the tmod_res option to speed this up)", .id))
+    .data_prep_log(sprintf(
+      "Loading tmod results for %s (consider using the tmod_res option to speed this up)",
+      .id
+    ))
     ret[["tmod_res"]] <- tryCatch(
       get_tmod_res(.pip),
       error=function(e) {
-        message(sprintf(" * tmod results unavailable for %s: %s", .id, conditionMessage(e)))
+        .data_prep_log(sprintf("tmod results unavailable for %s: %s", .id, conditionMessage(e)))
         NULL
       }
     )
@@ -36,11 +49,14 @@
   }
 
   if(is.null(tmod_dbs[[.id]])) {
-    message(sprintf(" * Loading tmod databases for %s (consider using the tmod_dbs option to speed this up)", .id))
+    .data_prep_log(sprintf(
+      "Loading tmod databases for %s (consider using the tmod_dbs option to speed this up)",
+      .id
+    ))
     ret[["tmod_dbs"]] <- tryCatch(
       get_tmod_dbs(.pip),
       error=function(e) {
-        message(sprintf(" * tmod databases unavailable for %s: %s", .id, conditionMessage(e)))
+        .data_prep_log(sprintf("tmod databases unavailable for %s: %s", .id, conditionMessage(e)))
         NULL
       }
     )
@@ -62,14 +78,14 @@
   ret[["tmod_map"]] <- tryCatch(
     get_tmod_mapping(.pip),
     error=function(e) {
-      message(sprintf(" * tmod mapping unavailable for %s: %s", .id, conditionMessage(e)))
+      .data_prep_log(sprintf("tmod mapping unavailable for %s: %s", .id, conditionMessage(e)))
       NULL
     }
   )
   ret[["tmod_gl"]]  <- tryCatch(
     get_object(.pip, step="tmod", extension="gl.rds", as_list=TRUE),
     error=function(e) {
-      message(sprintf(" * tmod gene lists unavailable for %s: %s", .id, conditionMessage(e)))
+      .data_prep_log(sprintf("tmod gene lists unavailable for %s: %s", .id, conditionMessage(e)))
       NULL
     }
   )

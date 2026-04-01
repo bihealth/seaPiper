@@ -162,7 +162,7 @@ seapiperdata_from_rseasnap <- function(pip, primary_id="PrimaryID",
     if(!is.null(tmod_dbs)) { tmod_dbs <- list(default=tmod_dbs) }
   }
 
-  message("preparing...")
+  .make_seapiperdata_log("preparing...")
   sample_id <- .normalize_sample_id_value(sample_id, "seapiperdata_from_rseasnap")
   if(is.null(annot))    { annot <- list() }
   if(is.null(cntr))     { cntr <- list() }
@@ -396,6 +396,10 @@ custom_yaml_to_seapiperdata <- function(...) {
   seapiperdata_from_yaml(...)
 }
 
+.make_seapiperdata_log <- function(...) {
+  .seapiper_log(..., .prefix="make_seapiperdata")
+}
+
 # Validate that an input is a seaPiperData object.
 # Returns NULL; used for side effects (errors).
 .assert_seapiperdata <- function(x, arg) {
@@ -490,7 +494,7 @@ custom_yaml_to_seapiperdata <- function(...) {
   optional_keys <- keys[!keys %in% c("covar", "sample_id")]
   missing_optional <- optional_keys[vapply(ret[optional_keys], is.null, logical(1))]
   if(length(missing_optional) > 0) {
-    message(
+    .make_seapiperdata_log(
       sprintf(
         "Dataset `%s`: optional keys not provided: %s. Related app modules may be disabled.",
         dataset_name,
@@ -564,7 +568,7 @@ custom_yaml_to_seapiperdata <- function(...) {
       filter     = list(low_counts=NA_integer_, min_counts=NA_integer_, min_count_n=NA_integer_),
       dataset_title = dataset_name
     )
-    message(sprintf("Dataset `%s`: `config` not provided; using default config.", dataset_name))
+    .make_seapiperdata_log(sprintf("Dataset `%s`: `config` not provided; using default config.", dataset_name))
   } else {
     .validate_user_config(ret$config, sprintf("config for dataset `%s`", dataset_name))
     if(is.null(ret$config$dataset_title)) {
@@ -727,7 +731,7 @@ custom_yaml_to_seapiperdata <- function(...) {
   if(!is.null(ret$tmod_gl) && !is.null(ret$annot) && primary_id %in% colnames(ret$annot)) {
     ret$tmod_gl <- .convert_tmod_gl(ret$tmod_gl, ret$annot[[primary_id]])
   } else if(!is.null(ret$tmod_gl) && is.null(ret$annot)) {
-    message(sprintf("Dataset `%s`: `tmod_gl` provided without `annot`; loaded as-is.", dataset_name))
+    .make_seapiperdata_log(sprintf("Dataset `%s`: `tmod_gl` provided without `annot`; loaded as-is.", dataset_name))
   }
 
   ret
@@ -741,7 +745,7 @@ custom_yaml_to_seapiperdata <- function(...) {
     vars <- apply(mtx, 2, var)
     sel  <- vars > 1e-26
     ret$pca <- prcomp(mtx[ , sel], scale.=TRUE)$x
-    message(sprintf("Dataset `%s`: computed `pca` from `rld`.", dataset_name))
+    .make_seapiperdata_log(sprintf("Dataset `%s`: computed `pca` from `rld`.", dataset_name))
   }
   ret
 }

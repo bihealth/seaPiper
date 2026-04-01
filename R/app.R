@@ -1,3 +1,7 @@
+.app_log <- function(...) {
+  .seapiper_log(..., .prefix="app")
+}
+
 #' seaPiper Workflow output explorer
 #'
 #' seaPiper Workflow output explorer for the sea-snap pipeline
@@ -83,7 +87,7 @@ seapiper <- function(data, title="Workflow output explorer",
     details <- vapply(names(validation$missing), function(name) {
       sprintf("%s (missing: %s)", name, paste(validation$missing[[name]], collapse=", "))
     }, character(1))
-    message("seaPiper: disabled modules: ", paste(details, collapse="; "))
+    .app_log("disabled modules: ", paste(details, collapse="; "))
   }
   header  <- .pipeline_dashboard_header(title)     
   sidebar <- .pipeline_dashboard_sidebar(features=features, debug_panel=debug_panel)
@@ -180,7 +184,6 @@ seapiper <- function(data, title="Workflow output explorer",
   if(is.null(selected_ids) || length(selected_ids) == 0L) {
     return(invisible(FALSE))
   }
-  print(selected_ids)
 
   updateTabItems(session, "navid", "heatmap")
   invisible(TRUE)
