@@ -250,54 +250,63 @@ seapiperdata_from_yaml <- function(yaml_file, primary_id="PrimaryID", sample_id=
   .as_seapiperdata(transpose(data))
 }
 
-#' Merge two seaPiperData objects
+#' Merge one or more seaPiperData objects
 #'
-#' Combine two `seaPiperData` objects into one. Dataset IDs from both inputs are
-#' preserved. If the same dataset ID appears in both objects, provide
-#' `dataset_names` (or rename inputs via [`name<-`]) to disambiguate them.
+#' Combine multiple `seaPiperData` objects into one. Dataset IDs from all inputs
+#' are preserved. If the same dataset ID appears in more than one object,
+#' provide `names` (or rename inputs via [`name<-`]) to disambiguate them.
 #'
 #' @param x first `seaPiperData` object
 #' @param y second `seaPiperData` object
-#' @param dataset_names optional character vector of length 2, used to rename
-#'   the dataset IDs of `x` and `y` before merging. Intended for merging two
-#'   single-dataset objects.
+#' @param ... additional `seaPiperData` objects to merge.
+#' @param names optional character vector with one dataset ID per input object,
+#'   used to rename datasets before merging. Intended for merging single-dataset
+#'   objects with overlapping IDs.
 #' @return A merged object of class `seaPiperData`.
 #' @export
-merge_seapiperdata <- function(x, y, dataset_names=NULL) {
-  .assert_seapiperdata(x, "x")
-  .assert_seapiperdata(y, "y")
+merge_seapiperdata <- function(x, y, ..., names=NULL) {
+  objects <- c(list(x, y), list(...))
 
-  if(!is.null(dataset_names)) {
-    if(!is.character(dataset_names) || length(dataset_names) != 2 || anyNA(dataset_names) ||
-       any(!nzchar(dataset_names))) {
-      stop("`dataset_names` must be a character vector of length 2 with non-empty values")
-    }
-    x <- `name<-`(x, dataset_names[[1]])
-    y <- `name<-`(y, dataset_names[[2]])
+  for(i in seq_along(objects)) {
+    arg <- if(i == 1L) "x" else if(i == 2L) "y" else sprintf("..%d", i - 2L)
+    .assert_seapiperdata(objects[[i]], arg)
   }
 
-  ids_x <- .dataset_ids_from_seapiperdata(x)
-  ids_y <- .dataset_ids_from_seapiperdata(y)
+  if(!is.null(names)) {
+    if(!is.character(names) || length(names) != length(objects) || anyNA(names) ||
+       any(!nzchar(names))) {
+      stop(sprintf(
+        "`names` must be a character vector of length %d with non-empty values",
+        length(objects)
+      ))
+    }
+    objects <- Map(function(obj, dataset_name) `name<-`(obj, dataset_name), objects, names)
+  }
 
-  overlap <- intersect(ids_x, ids_y)
+  dataset_ids <- map(objects, .dataset_ids_from_seapiperdata)
+  all_ids <- unlist(dataset_ids, use.names=FALSE)
+  overlap <- unique(all_ids[duplicated(all_ids)])
   if(length(overlap) > 0L) {
     stop(
       sprintf(
         paste(
-          "Duplicate dataset IDs between `x` and `y`: %s.",
-          "Rename datasets first using `name(x) <- ...`, or pass `dataset_names`."
+          "Duplicate dataset IDs across inputs: %s.",
+          "Rename datasets first using `name(<object>) <- ...`, or pass `names`."
         ),
         paste(overlap, collapse=", ")
       )
     )
   }
 
-  fields <- .merge_field_names(x, y)
+  fields <- do.call(.merge_field_names, objects)
 
-  merged <- map(fields, ~ {
-    x_values <- .normalize_field_values(x[[.x]], ids_x, .x)
-    y_values <- .normalize_field_values(y[[.x]], ids_y, .x)
-    combined <- c(x_values, y_values)
+  merged <- map(fields, function(field) {
+    normalized <- Map(
+      function(obj, ids) .normalize_field_values(obj[[field]], ids, field),
+      objects,
+      dataset_ids
+    )
+    combined <- do.call(c, normalized)
     if(length(combined) > 0 && all(vapply(combined, is.null, logical(1)))) {
       NULL
     } else {
@@ -428,11 +437,12 @@ custom_yaml_to_seapiperdata <- function(...) {
 
 # Determine merged top-level field names in stable schema-first order.
 # Returns character vector of field names to merge.
-.merge_field_names <- function(x, y) {
+.merge_field_names <- function(...) {
+  objects <- list(...)
   schema_fields <- c("annot", "cntr", "tmod_res", "tmod_dbs", "tmod_map", "tmod_gl",
                      "config", "sample_id", "covar", "annot_linkout", "dbs", "sorting",
                      "rld", "pca", "cntr_titles")
-  unique(c(schema_fields, names(x), names(y)))
+  unique(c(schema_fields, unlist(lapply(objects, names), use.names=FALSE)))
 }
 
 # Normalize one top-level field to a named list indexed by dataset IDs.

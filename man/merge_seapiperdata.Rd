@@ -2,24 +2,26 @@
 % Please edit documentation in R/make_seapiperdata.R
 \name{merge_seapiperdata}
 \alias{merge_seapiperdata}
-\title{Merge two seaPiperData objects}
+\title{Merge one or more seaPiperData objects}
 \usage{
-merge_seapiperdata(x, y, dataset_names = NULL)
+merge_seapiperdata(x, y, ..., names = NULL)
 }
 \arguments{
 \item{x}{first \code{seaPiperData} object}
 
 \item{y}{second \code{seaPiperData} object}
 
-\item{dataset_names}{optional character vector of length 2, used to rename
-the dataset IDs of \code{x} and \code{y} before merging. Intended for merging two
-single-dataset objects.}
+\item{...}{additional \code{seaPiperData} objects to merge.}
+
+\item{names}{optional character vector with one dataset ID per input object,
+used to rename datasets before merging. Intended for merging single-dataset
+objects with overlapping IDs.}
 }
 \value{
 A merged object of class \code{seaPiperData}.
 }
 \description{
-Combine two \code{seaPiperData} objects into one. Dataset IDs from both inputs are
-preserved. If the same dataset ID appears in both objects, provide
-\code{dataset_names} (or rename inputs via \code{\link{name<-}}) to disambiguate them.
+Combine multiple \code{seaPiperData} objects into one. Dataset IDs from all inputs
+are preserved. If the same dataset ID appears in more than one object,
+provide \code{names} (or rename inputs via \code{\link{name<-}}) to disambiguate them.
 }
